@@ -34,10 +34,17 @@ DEFAULT_GAME_STATE ={
     "p1_claimed": False,
     "p2_claimed": False,
     
-    "p1": {"x":5, "y":10, "hp": 6}, #player 1 starts at the bottom middle of the grid, with 6 hp
+    #memory of RPS game, to determine the winner of each move
+    "p1_rps": None,
+    "p2_rps": None,
+    "turn": None,
     
+    #players territory on grid
+    "p1": {"x":5, "y":10, "hp": 6}, #player 1 starts at the bottom middle of the grid, with 6 hp
     "p2": {"x":5, "y":0, "hp": 6},  #player 2 starts at the top middle of the grid, with 6 hp
 }
+
+#==============================Game State Management===========================
 
 @socketio.on('join_game')
 def handle_join(data=None):
@@ -55,6 +62,8 @@ def handle_join(data=None):
     emit('game_update', json.loads(state), broadcast=True)  #broadcast=True, means that the game state will be sent to all connected clients, not just the one that triggered the event
         
     
+    
+#==============================Player Selection Logic===========================
 @socketio.on('claim_player')
 def handle_claim(player_id):
     state = json.loads(r.get('game_state'))
@@ -68,11 +77,56 @@ def handle_claim(player_id):
         
     #if both players are choosen, game starts 
     if state["p1_claimed"] and state ["p2_claimed"]:
-        state["status"] = "playing"
+        state["status"] = "rps"
         
         #save to redis
     r.set('game_state', json.dumps(state))
     emit('game_update', state, broadcast=True)    
+
+#==============================RPS Logic===========================
+
+@socketio.on('play_rps')
+def handle_rps(data):
+    state = json.loads(r.get('game_state'))
+    player = data['player']
+    choice = data['choice']
+    
+    #saves players choice to the game state
+    if player == "p1":
+        state["p1_rps"] = choice
+    elif player == "p2":
+        state["p2_rps"] = choice
+        
+    #check if both players have made their choice
+    if state["p1_rps"] and state["p2_rps"]:
+        p1 = state["p1_rps"]
+        p2 = state["p2_rps"]
+        
+        #determine the winner of the RPS round
+        if p1 == p2:
+            #if it's a tie, reset choices.
+            state["p1_rps"] = None
+            state["p2_rps"] = None
+            
+        elif (p1 =="rock" and p2 == "scissors") or \
+            (p1 == "scissors" and p2 == "paper") or \
+            (p1 == "paper" and p2 == "rock"):
+            #player 1 wins the round, gets to move first
+            state["turn"] = "p1"                   
+            state["status"] = "playing"
+            
+        else:
+            #player 2 wins the round, gets to move first
+            state["turn"] = "p2"
+            state["status"] = "playing"
+        
+    #save the updated game state to redis
+    r.set('game_state', json.dumps(state))
+    emit('game_update', state, broadcast=True)  #send the updated game state to
+            
+            
+        
+
 
 #to start the server
 if __name__ == '__main__':

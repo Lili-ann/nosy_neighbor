@@ -50,6 +50,13 @@ function App() {
   if (!gameState)
     return <div className="lobby-container">
       <h2>Loading game...</h2></div>;
+    
+  
+//to handle the RPS choice and send it to backend when the player clicks a button.
+// The backend will then determine the winner and update the game state accordingly.
+  const handleRpsChoice = (choice) => {
+    socket.emit('play_rps', { player: myPlayerId, choice: choice});
+  };
 
 
 
@@ -102,6 +109,35 @@ if (gameState.status === 'waiting_for_players') {
   );
 }
 
+//==============================THE RPS SCREEN - CHOOSE YOUR MOVE=================================================
+if (gameState.status === 'rps') {
+  const myChoice = myPlayerId ==='p1' ? gameState.p1_rps : gameState.p2_rps;
+
+  return(
+    <div className="rps-container">
+      <h1 style={{ fontSize: '3rem', marginBottom: '20px', textAlign: 'center'}}>Nosy Neighbor</h1>
+      <h2> Mini-Game: Who gets to go First? </h2>
+    
+    {/* RPS buttons */}
+    {!myChoice ? (
+      <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
+        <button onClick={() => handleRpsChoice('rock')} style={{ padding: '10px 20px', fontSize: '1.2rem', border: 'none', backgroundColor: '#95a5a6', cursor: 'pointer' }}>Rock</button>
+        <button onClick={() => handleRpsChoice('paper')} style={{ padding: '10px 20px', fontSize: '1.2rem', border: 'none', backgroundColor: '#95a5a6', cursor: 'pointer' }}>Paper</button>
+        <button onClick={() => handleRpsChoice('scissors')} style={{ padding: '10px 20px', fontSize: '1.2rem', border: 'none', backgroundColor: '#95a5a6', cursor: 'pointer' }}>Scissors</button>
+      </div>
+    ) : (
+      /*hide buttons if players have choosen*/
+      <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <h3>Your choice: {myChoice.toUpperCase()} </h3>
+        <p style={{ animation: 'pulse 1.5s infinite', marginTop: '10px', fontSize:'1.2rem' }}>
+          Waiting for opponent to choose...
+          </p>
+    </div>
+  )}
+  </div>
+  );
+}
+
 
 
 // ===============================THE GAME BOARD SCREEN===============================================
@@ -143,6 +179,10 @@ if (gameState.status === 'waiting_for_players') {
 
       <h2 style={{ marginBottom: '10px'}}>You are: {myPlayerId === 'p1' ? 'Player 1 (Blue)' : 'Player 2 (Red)'}</h2>
 
+      <h3 style={{ marginBottom: '20px', color: '#ff0000' }}>
+         {gameState.turn === 'p1' ? 'Player 1' : 'Player 2'} turn
+        </h3>
+
       {/* Game Board */}
       <div className="board">
         {cells}
@@ -151,6 +191,6 @@ if (gameState.status === 'waiting_for_players') {
       </div>
     
   );
+  }
 
-}
 export default App;
