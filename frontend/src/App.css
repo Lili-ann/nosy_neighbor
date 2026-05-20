@@ -25,6 +25,16 @@
   border-radius: 5px;
 }
 
+/* Rotates the entire board 180 degrees for Player 2 */
+.board-rotated {
+  transform: rotate(180deg);
+}
+
+/* Counter-rotates the text inside the squares so you can still read it */
+.board-rotated .grid-cell {
+  transform: rotate(180deg);
+}
+
 /* Standard empty tile */
 .grid-cell {
   background-color: #ecf0f1;

@@ -184,7 +184,7 @@ if (gameState.status === 'rps') {
         </h3>
 
       {/* Game Board */}
-      <div className="board">
+      <div className={`board ${myPlayerId === 'p2' ? 'board-rotated' : ''}`}>
         {cells}
       </div>
 
