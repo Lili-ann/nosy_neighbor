@@ -1,0 +1,65 @@
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #2c3e50;
+  color: white;
+  font-family: sans-serif;
+}
+
+.status-board {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* The 11x11 Grid */
+.board {
+  display: grid;
+  grid-template-columns: repeat(11, 40px);
+  grid-template-rows: repeat(11, 40px);
+  gap: 2px;
+  background-color: #000;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+/* Standard empty tile */
+.grid-cell {
+  background-color: #ecf0f1;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+/* Player and Path Colors */
+.cell-p1 {
+  background-color: #3498db; /* Blue for Player 1 */
+}
+
+.cell-p2 {
+  background-color: #e74c3c; /* Red for Player 2 */
+}
+
+.cell-path-p1 {
+  background-color: #85c1e9; /* Light blue for P1's trail */
+}
+
+.cell-path-p2 {
+  background-color: #f1948a; /* Light red for P2's trail */
+}
+
+/* Player 1 is Blue */
+.cell-p1 {
+  background-color: #3498db; 
+}
+
+/* Player 2 is Red */
+.cell-p2 {
+  background-color: #e74c3c; 
+}
