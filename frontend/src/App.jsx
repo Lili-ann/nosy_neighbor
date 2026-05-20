@@ -55,9 +55,17 @@ function App() {
 //to handle the RPS choice and send it to backend when the player clicks a button.
 // The backend will then determine the winner and update the game state accordingly.
   const handleRpsChoice = (choice) => {
-    socket.emit('play_rps', { player: myPlayerId, choice: choice});
+    socket.emit('play_rps', { player: myPlayerId, choice: choice });
   };
 
+
+  //handling movement logic
+  const handleMove = (direction) => {
+    //send message only if its actuall the players turn
+    if (gameState.turn === myPlayerId) {
+      socket.emit('move_player', { player: myPlayerId, direction: direction });
+    }
+  };
 
 
 
@@ -188,9 +196,39 @@ if (gameState.status === 'rps') {
         {cells}
       </div>
 
+      <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+
+      {/* the forward button */}
+      <button 
+        onClick={() => handleMove('forward')}
+        disabled={gameState.turn !== myPlayerId}
+        style={{ padding: '10px 20px', fontSize: '1.2rem', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
+        >Forward
+      </button>
+
+      <div styles={{ display: 'flex', gap: '20px' }}>
+
+      {/* the left button */}
+      <button 
+        onClick={() => handleMove('left')}
+        disabled={gameState.turn !== myPlayerId}
+        style={{ padding: '10px 20px', fontSize: '1.2rem', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
+        >Left
+      </button>
+
+      {/* the right button */}   
+      <button 
+        onClick={() => handleMove('right')} 
+        disabled={gameState.turn !== myPlayerId}
+        style={{ padding: '15px 20px', fontSize: '1.2rem', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#3498db' : '#7f8c8d', color: 'white' }}
+      > Right
+      </button>
+
+          </div>
       </div>
+    </div>
     
   );
-  }
+} 
 
 export default App;

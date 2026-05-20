@@ -44,6 +44,21 @@ DEFAULT_GAME_STATE ={
     "p2": {"x":5, "y":0, "hp": 6},  #player 2 starts at the top middle of the grid, with 6 hp
 }
 
+#===============================MOVEMENT CONTROLL===============================
+MOVEMENT_LOGIC ={
+    "p1": {
+        "forward": {"x": 0, "y": -1},    #p1 moves up the grid
+        "left": {"x": -1, "y": 0},
+        "right": {"x": 1, "y": 0}
+    },
+    "p2": {
+        "forward": {"x": 0, "y": 1},         #moves down the grid
+        "left": {"x": 1, "y": 0},
+        "right": {"x": -1, "y": 0}
+            
+    }
+}
+
 #==============================Game State Management===========================
 
 @socketio.on('join_game')
@@ -125,7 +140,48 @@ def handle_rps(data):
     emit('game_update', state, broadcast=True)  #send the updated game state to
             
             
+# ======================================MOVEMENT LOGIC==============================
+@socketio.on('move_player')
+def handle_move(data):
+    state =json.loads(r.get('game_state'))
+    player = data['player']
+    direction = data['direction']
+    
+    #ignores move if its not player's turn or game is not playing.
+    if state["status"] != "playing" or state["turn"] != player:
+        return
         
+    #get current position
+    current_x = state[player]["x"]
+    current_y = state[player]["y"]
+    
+    #get specific player and direction movement logic
+    math = MOVEMENT_LOGIC[player][direction]
+    
+    #calculate new position
+    new_x = current_x + math["x"]
+    new_y = current_y + math["y"]
+    
+    #check if new position is valid
+    if 0 <= new_x <= 10 and 0 <= new_y <= 10:
+        
+        #if move is safe, gets updated
+        state[player]["x"] = new_x
+        state[player]["y"] = new_y
+        
+        
+        #switch players turn
+        if player =="p1":
+            state["turn"] = "p2"
+        else:
+            state["turn"] = "p1"
+            
+        #save to redis
+        r.set('game_state', json.dumps(state))
+        emit('game_update', state, broadcast=True)
+        
+
+
 
 
 #to start the server
