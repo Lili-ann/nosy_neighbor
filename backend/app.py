@@ -49,11 +49,13 @@ MOVEMENT_LOGIC ={
     "p1": {
         "forward": {"x": 0, "y": -1},    #p1 moves up the grid
         "left": {"x": -1, "y": 0},
+        "backward": {"x": 0, "y": 1},
         "right": {"x": 1, "y": 0}
     },
     "p2": {
         "forward": {"x": 0, "y": 1},         #moves down the grid
         "left": {"x": 1, "y": 0},
+        "backward": {"x": 0, "y": -1},
         "right": {"x": -1, "y": 0}
             
     }

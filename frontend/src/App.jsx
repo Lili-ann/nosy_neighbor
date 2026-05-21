@@ -8,7 +8,39 @@ const socket = io('http://localhost:5000');
 function App() {
 //gameState starts empty until Python sends the data
   const [gameState, setGameState] = useState(null);  
-  const [myPlayerId, setMyPlayerId] = useState(null); //to track if this device is P1 or P2
+  const [myPlayerId, setMyPlayerId] = useState(null) 
+  
+  //-----------------------handling movement logic---------------------------
+  const handleMove = (direction) => {
+    //send message only if its actuall the players turn
+    if (gameState.turn === myPlayerId) {
+      socket.emit('move_player', { player: myPlayerId, direction: direction });
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!gameState || gameState.turn !== myPlayerId) return;
+
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault(); //prevent default scrolling behavior
+      }
+
+      if (e.key === 'ArrowUp') socket.emit('move_player', { player: myPlayerId, direction: 'forward' });
+      if (e.key === 'ArrowDown') socket.emit('move_player', { player: myPlayerId, direction: 'backward' });
+      if (e.key === 'ArrowLeft') socket.emit('move_player', { player: myPlayerId, direction: 'left' });
+      if (e.key === 'ArrowRight') socket.emit('move_player', { player: myPlayerId, direction: 'right' });
+
+    };
+
+      // tell browers to listen for key pressed
+    window.addEventListener('keydown', handleKeyDown);
+    
+    //cleanup function to stop listening when game ends.
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [gameState, myPlayerId]);; //to track if this device is P1 or P2
 
   //creating grid for board
   const gridSize =11;
@@ -41,7 +73,7 @@ function App() {
     };
   }, []); //empty brackets mean "only run this setup ONE time when the page loads"
 
-
+//-------------------------------------------------------------------------------------------------------
   //when a player is selected, ID gets locked and sent to backend to claim it.
   const handleChoosePlayer = (playerId) => {
     setMyPlayerId(playerId);
@@ -52,20 +84,14 @@ function App() {
       <h2>Loading game...</h2></div>;
     
   
-//to handle the RPS choice and send it to backend when the player clicks a button.
+//-----------------------------handle the RPS choice ------------------------------
 // The backend will then determine the winner and update the game state accordingly.
   const handleRpsChoice = (choice) => {
     socket.emit('play_rps', { player: myPlayerId, choice: choice });
   };
 
 
-  //handling movement logic
-  const handleMove = (direction) => {
-    //send message only if its actuall the players turn
-    if (gameState.turn === myPlayerId) {
-      socket.emit('move_player', { player: myPlayerId, direction: direction });
-    }
-  };
+ 
 
 
 
@@ -202,26 +228,34 @@ if (gameState.status === 'rps') {
       <button 
         onClick={() => handleMove('forward')}
         disabled={gameState.turn !== myPlayerId}
-        style={{ padding: '10px 20px', fontSize: '1.2rem', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
-        >Forward
+        style={{ padding: '10px 20px', fontSize: '40px', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
+        >⬆️
       </button>
 
-      <div styles={{ display: 'flex', gap: '20px' }}>
+      <div styles={{ display: 'flex', gap: '60px' }}>
 
       {/* the left button */}
       <button 
         onClick={() => handleMove('left')}
         disabled={gameState.turn !== myPlayerId}
-        style={{ padding: '10px 20px', fontSize: '1.2rem', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
-        >Left
+        style={{ padding: '10px 30px', fontSize: '40px', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
+        >⬅️
+      </button>
+
+      {/* the backward button */}
+      <button 
+        onClick={() => handleMove('backward')}
+        disabled={gameState.turn !== myPlayerId}
+        style={{ padding: '10px 30px', margin: '30px',  fontSize: '40px', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
+        >⬇️
       </button>
 
       {/* the right button */}   
       <button 
         onClick={() => handleMove('right')} 
         disabled={gameState.turn !== myPlayerId}
-        style={{ padding: '15px 20px', fontSize: '1.2rem', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#3498db' : '#7f8c8d', color: 'white' }}
-      > Right
+        style={{  padding: '10px 30px', fontSize: '40px', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
+      >➡️
       </button>
 
           </div>
