@@ -39,6 +39,10 @@ DEFAULT_GAME_STATE ={
     "p2_rps": None,
     "turn": None,
     
+    #memory for player's trail path
+    "p1_trail": [],
+    "p2_trail": [],
+    
     #players territory on grid
     "p1": {"x":5, "y":10, "hp": 6}, #player 1 starts at the bottom middle of the grid, with 6 hp
     "p2": {"x":5, "y":0, "hp": 6},  #player 2 starts at the top middle of the grid, with 6 hp
@@ -166,6 +170,9 @@ def handle_move(data):
     
     #check if new position is valid
     if 0 <= new_x <= 10 and 0 <= new_y <= 10:
+        
+        #drops breadcrumb in the trail list, to keep track of player's path.
+        state[f"{player}_trail"].append({"x":current_x, "y" : current_y})
         
         #if move is safe, gets updated
         state[player]["x"] = new_x

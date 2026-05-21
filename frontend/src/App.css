@@ -64,12 +64,24 @@
   background-color: #f1948a; /* Light red for P2's trail */
 }
 
-/* Player 1 is Blue */
+/* The active players */
 .cell-p1 {
-  background-color: #3498db; 
+  background-color: #3498db; /* Solid Blue */
+  color: white;
+  font-weight: bold;
 }
 
-/* Player 2 is Red */
 .cell-p2 {
-  background-color: #e74c3c; 
+  background-color: #e74c3c; /* Solid Red */
+  color: white;
+  font-weight: bold;
+}
+
+/* NEW: The trails they leave behind */
+.cell-trail-p1 {
+  background-color: #85c1e9; /* Faded Light Blue */
+}
+
+.cell-trail-p2 {
+  background-color: #f1948a; /* Faded Light Red */
 }

@@ -189,14 +189,23 @@ if (gameState.status === 'rps') {
 
   //check if backend has given the board data.
   if (gameState) {
-    if(gameState.p1.x === x && gameState.p1.y === y) {
+   // 1. Check if the cell is the actual Player
+    if (gameState.p1.x === x && gameState.p1.y === y) {
       cellClass = "grid-cell cell-p1"; 
       cellText = "P1";
-    }
-
-    else if(gameState.p2.x === x && gameState.p2.y === y) {
+    } else if (gameState.p2.x === x && gameState.p2.y === y) {
       cellClass = "grid-cell cell-p2"; 
       cellText = "P2";
+    } else {
+      // 2. If it's not the player, check if it's a Trail!
+      const isP1Trail = gameState.p1_trail.some(spot => spot.x === x && spot.y === y);
+      const isP2Trail = gameState.p2_trail.some(spot => spot.x === x && spot.y === y);
+
+      if (isP1Trail) {
+        cellClass = "grid-cell cell-trail-p1";
+      } else if (isP2Trail) {
+        cellClass = "grid-cell cell-trail-p2";
+      }
     }
   }
 
@@ -263,6 +272,8 @@ if (gameState.status === 'rps') {
     </div>
     
   );
-} 
+
+}
+ 
 
 export default App;
