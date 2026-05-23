@@ -189,6 +189,11 @@ if (gameState.status === 'rps') {
 
   //check if backend has given the board data.
   if (gameState) {
+    // players base
+    const isP1Base = (x === 5 && y === 10);
+    const isP2Base = (x === 5 && y === 0);
+
+
    // 1. Check if the cell is the actual Player
     if (gameState.p1.x === x && gameState.p1.y === y) {
       cellClass = "grid-cell cell-p1"; 
@@ -196,7 +201,16 @@ if (gameState.status === 'rps') {
     } else if (gameState.p2.x === x && gameState.p2.y === y) {
       cellClass = "grid-cell cell-p2"; 
       cellText = "P2";
-    } else {
+    } else if (isP1Base) {
+      //player 1 base
+      cellClass = "grid-cell cell-base-p1";
+      cellText = "🚩";
+    } else if (isP2Base) {
+      //player 2 base
+      cellClass = "grid-cell cell-base-p2";
+      cellText = "🚩";
+    }
+    else {
       // 2. If it's not the player, check if it's a Trail!
       const isP1Trail = gameState.p1_trail.some(spot => spot.x === x && spot.y === y);
       const isP2Trail = gameState.p2_trail.some(spot => spot.x === x && spot.y === y);
@@ -244,9 +258,9 @@ if (gameState.status === 'rps') {
   {/* ---------------------------------GAME OVER SCREEN------------------------------- */}
   {gameState.status === 'game_over' ? (
     <div style={{ backgroundColor: '#f8d7da', padding: '20px', borderRadius: '10px', border: '1px solid #f5c6cb', marginBottom: '20px' }}>
-      <h2 style={{ color: '#cc0000', margin: 0, animation: 'pulse 1.5s infinite' }}>
-        Game Over! {gameState.p1.hp > 0 ? 'Player 1 (Blue) Wins!' : 'Player 2 (Red) Wins!'}
-      </h2>
+     <h2 style={{ color: '#cc0000', margin: 0, animation: 'pulse 1.5s infinite' }}>
+          🚨 GAME OVER! {gameState.winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!'} 🚨
+        </h2>
     </div>
    ) : (
 

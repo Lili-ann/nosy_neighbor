@@ -85,3 +85,14 @@
 .cell-trail-p2 {
   background-color: #f1948a; /* Faded Light Red */
 }
+
+/* The Bases / Goals */
+.cell-base-p1 {
+  background-color: #2980b9; /* Darker Blue */
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+.cell-base-p2 {
+  background-color: #c0392b; /* Darker Red */
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}

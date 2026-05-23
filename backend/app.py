@@ -171,23 +171,31 @@ def handle_move(data):
     
     #check if new position is valid
     if 0 <= new_x <= 10 and 0 <= new_y <= 10:
-        
+        #who is the opponent?
         opponent ="p2" if player == "p1" else "p1"
         opponent_trail = state[f"{opponent}_trail"]
         
-        #checks if player stepped on opponent's trail.
-        stepped_on_enemy_trail = False
+        #drops breadc crumbs on current spot before moving, to create a trail
+        
+        current_spot = {"x": current_x, 'y': current_y}
+        if current_spot not in state[f"{player}_trail"]:    # avoid saving the same coordinates again
+            state[f"{player}_trail"].append(current_spot)
+            
+            
         for spot in opponent_trail:
+            #checks if player stepped on opponent's trail
             if spot["x"] == new_x and spot["y"] == new_y:
                 #lose 1 HP if stepped on opponent's trail
                 state[player]["hp"] -= 1
                  
                 #steal territory by removing the spot from opponent's trail and adding it to player's trail             
                 opponent_trail.remove(spot)
-                state[f"{player}_trail"].append({"x": new_x, "y": new_y})  
                 
-                stepped_on_enemy_trail =True
-                print(f"{player} stole {opponent}'s trail and lost 1 hp!") 
+                new_spot = {"x": new_x, "y": new_y}
+                if new_spot not in state[f"{player}_trail"]:
+                    state[f"{player}_trail"].append(new_spot)
+                
+                print(f"{player} stole {opponent}'s tile and lost 1 hp!") 
                 break        
                               
          #if player did not step on enemy trail                     
@@ -197,7 +205,24 @@ def handle_move(data):
         #if move is safe, player move to new position.
         state[player]["x"] = new_x
         state[player]["y"] = new_y
-                     
+            
+        #check if a player died (low hp)
+        if state[player]["hp"] <= 0:
+            state["status"] = "game_over"
+            state["winner"] = opponent
+            print(f"DEATH! {opponent} wins by knockout!")
+            
+        elif player =="p1" and new_x == 5 and new_y == 0:
+            state["status"] = "game_over"
+            state["winner"] = "p1"
+            print("Player 1 Captured Player 2 Base!")
+        
+        elif player =="p2" and new_x == 5 and new_y == 10:
+            state["status"] = "game_over"
+            state["winner"] = "p2"
+            print("Player 2 Captured Player 1 Base!")
+            
+ #===================================================================================           
     
             #switch players only when game is still playing.
         if state["status"] != "game_over":
