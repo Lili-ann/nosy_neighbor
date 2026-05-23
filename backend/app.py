@@ -1,5 +1,6 @@
 import json
 import redis
+import random
 import pika    #translator to talk to rabbitmq
 from flask import Flask
 from flask_socketio import SocketIO, emit
@@ -39,6 +40,11 @@ DEFAULT_GAME_STATE ={
     "p2_rps": None,
     "turn": None,
     "winner": None,
+    
+    "p1_inventory": [],  #storing player1 powerups
+    "p2_inventory": [], #storing player2 powerups
+    "walls": [],  #randomly placed wall positions
+    "medkit": [], #randomly placed one medkit position
     
     #memory for player's trail path
     "p1_trail": [],
@@ -136,12 +142,35 @@ def handle_rps(data):
             #player 1 wins the round, gets to move first
             state["turn"] = "p1"                   
             state["status"] = "playing"
+            state["p1_inventory"].append(random.choice(["bomb", "boots"]))
             
         else:
             #player 2 wins the round, gets to move first
             state["turn"] = "p2"
             state["status"] = "playing"
+            state["p2_inventory"].append(random.choice(["bomb", "boots"]))
+            
+# ==============================WALLS AND MEDKITS LOGIC===========================
+    #randomly place 5 walls and 1 medkit on the grid at the start of the game, only if they haven't been placed yet
+    if state["status"] == "playing":
+        #generate 5 -7 random wall positions
         
+        num_walls = random.randint(5, 7)
+        safe_zones = [{"x": 5, "y": 10}, {"x": 5, "y": 0}]  #walls are not placed close to players base
+        
+        while len(state["walls"]) < num_walls:
+            spot ={"x": random.randint(0, 10), "y": random.randint(0, 10)}
+            
+            if spot not in safe_zones and spot not in state["walls"]:
+                state["walls"].append(spot)
+        
+        #generate 1 random medkit position, not on a wall or safe zone
+        while state["medkit"] is None:
+            spot = { "x" : random.randint(0, 10), "y": random.randint(0, 10)}
+            
+            if spot not in safe_zones and spot not in state["walls"]:
+                state["medkit"] = spot
+    
     #save the updated game state to redis
     r.set('game_state', json.dumps(state))
     emit('game_update', state, broadcast=True)  #send the updated game state to
@@ -171,6 +200,11 @@ def handle_move(data):
     
     #check if new position is valid
     if 0 <= new_x <= 10 and 0 <= new_y <= 10:
+        
+        if {"x": new_x, "y": new_y} in state["walls"]:
+            return #invalid move, player hit a wall, do not update position or switch turn
+        
+        
         #who is the opponent?
         opponent ="p2" if player == "p1" else "p1"
         opponent_trail = state[f"{opponent}_trail"]
@@ -198,13 +232,29 @@ def handle_move(data):
                 print(f"{player} stole {opponent}'s tile and lost 1 hp!") 
                 break        
                               
-         #if player did not step on enemy trail                     
-        if not stepped_on_enemy_trail:
-            state[f"{player}_trail"].append({"x": current_x, "y": current_y})    
+            #if player did not step on enemy trail                     
+            if not opponent_trail:
+                state[f"{player}_trail"].append({"x": current_x, "y": current_y})    
         
         #if move is safe, player move to new position.
         state[player]["x"] = new_x
         state[player]["y"] = new_y
+        
+    # ------------------------------check for powerup pickups-----------------------------
+        #check if player stepped on a medkit
+        if state["medkit"] and new_x == state["medkit"]["x"] and new_y == state["medkit"]["y"]:
+           if state[player]["hp"] < 6:
+                #if HP is less than 6, heal 1 HP
+                state[player]["hp"] += 1
+                print(f"{player} picked up a medkit and healed 1 HP!")
+           else:
+               #store in player inventory if HP is already full
+                state[f"{player}_inventory"].append("medkit")
+                print(f"{player} picked up a medkit")
+                
+        state["medkit"] = None  #remove medkit from the board after pickup
+            
+    #--------------------------------------------------------------------------------------------------- 
             
         #check if a player died (low hp)
         if state[player]["hp"] <= 0:
@@ -241,7 +291,7 @@ def handle_play_again():
     #reset the game state to default
     state = json.loads(r.get('game_state'))
     
-    if state["status"] != "game_over":
+    if state["status"] == "game_over":
         
         #players go back to RPS
         state['status'] = "rps"
@@ -252,6 +302,11 @@ def handle_play_again():
         state['turn'] = None
         state['winner'] = None
         
+        state['p1_inventory'] = []
+        state['p2_inventory'] = []
+        state['walls'] = []
+        state['medkit'] = None
+        
         state['p1_trail'] = []
         state['p2_trail'] = []
         
@@ -259,9 +314,11 @@ def handle_play_again():
         state['p1'] = {"x":5, "y":10, "hp": 6}
         state['p2'] = {"x":5, "y":0, "hp": 6}
             
-    #save to redis
-    r.set('game_state', json.dumps(state))
-    emit('game_update', state, broadcast=True)
+        #save to redis
+        r.set('game_state', json.dumps(state))
+        emit('game_update', state, broadcast=True)
+        
+        print("🔄 REMATCH INITIATED! Board cleared.")
     
     
 

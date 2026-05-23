@@ -180,6 +180,14 @@ if (gameState.status === 'rps') {
 
 // ===============================THE GAME BOARD SCREEN===============================================
 
+const getItemEmoji = (item) => {
+  if (item === "bomb") return "💣";
+  if (item === "boots") return "⚡";
+  if (item === "medkit") return "💊";
+  return item;
+};
+
+
  const cells =[];
  // this will loop 121 times to create the grid cells.
   for (let i = 0; i < totalcells; i++) {
@@ -197,6 +205,10 @@ if (gameState.status === 'rps') {
     const isP1Base = (x === 5 && y === 10);
     const isP2Base = (x === 5 && y === 0);
 
+    //check for walls and medkits
+    const isWall = gameState.walls.some(spot => spot.x === x && spot.y === y);
+    const isMedkit = gameState.medkit && gameState.medkit.x === x && gameState.medkit.y === y;
+
 
    // 1. Check if the cell is the actual Player
     if (gameState.p1.x === x && gameState.p1.y === y) {
@@ -213,6 +225,14 @@ if (gameState.status === 'rps') {
       //player 2 base
       cellClass = "grid-cell cell-base-p2";
       cellText = "🚩";
+    } else if (isWall) {
+      //wall
+      cellClass = "grid-cell cell-wall";
+      cellText = "🧱";
+    } else if (isMedkit) {
+      //medkit
+      cellClass = "grid-cell cell-medkit";
+      cellText = "💊";
     }
     else {
       // 2. If it's not the player, check if it's a Trail!
@@ -243,9 +263,9 @@ if (gameState.status === 'rps') {
       {/* ------------------------Game Status and HP system------------------------- */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '20px', backgroundColor: 'f8f9fa', padding: '15px 30px', borderRadius: '10px', border: '1px solid #ddd' }}>
         <div>
-          <span style={{ color: '-moz-initial', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 1 HP:</span>
+          <span style={{ color: '#3498db', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 1 HP:</span>
           <span style={{ fontSize: '1.5rem', marginLeft: '10px' }}>  
-          {gameState.p1_hp > 0 ? '💓'.repeat(gameState.p1_hp) : '💀'} ({gameState.p1.hp}/6)
+          {gameState.p1.hp > 0 ? '💓'.repeat(gameState.p1.hp) : '💀'} ({gameState.p1.hp}/6)
           </span>
         </div>
   
@@ -254,27 +274,26 @@ if (gameState.status === 'rps') {
         <div>
           <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 2 HP:</span>
           <span style={{ fontSize: '1.5rem', marginLeft: '10px' }}>
-          {gameState.p2_hp > 0 ? '💓'.repeat(gameState.p2_hp) : '💀'} ({gameState.p2.hp}/6)
+          {gameState.p2.hp > 0 ? '💓'.repeat(gameState.p2.hp) : '💀'} ({gameState.p2.hp}/6)
           </span>
         </div>  
         </div>
      
   {/* ---------------------------------GAME OVER SCREEN------------------------------- */}
- {gameState.status === 'game_over' ? (
-        <div style={{ backgroundColor: '#ffcccc', padding: '20px', borderRadius: '8px', border: '2px solid #ff0000', marginBottom: '20px', textAlign: 'center' }}>
-          <h2 style={{ color: '#cc0000', margin: '0 0 15px 0', animation: 'pulse 1.5s infinite' }}>
-            🚨 GAME OVER! {gameState.winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!'} 🚨
-          </h2>
-          
-          {/* The Play Again Button */}
-          <button 
-            onClick={handlePlayAgain}
-            style={{ padding: '10px 25px', fontSize: '1.2rem', cursor: 'pointer', borderRadius: '8px', border: 'none', backgroundColor: '#c0392b', color: 'white', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-          >
-            🔄 Play Again
-          </button>
-        </div>
-      ) : (
+  {gameState.status === 'game_over' ? (
+    <div style={{ backgroundColor: '#ffcccc', padding: '20px', borderRadius: '8px', border: '2px solid #ff0000', marginBottom: '20px', textAlign: 'center' }}>
+      <h2 style={{ color: '#cc0000', margin: '0 0 15px 0', animation: 'pulse 1.5s infinite' }}>
+        🚨 GAME OVER! {gameState.winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!'} 🚨
+      </h2>
+      
+      {/* The Play Again Button */}
+      <button 
+        onClick={handlePlayAgain}
+        style={{ padding: '10px 25px', fontSize: '1.2rem', cursor: 'pointer', borderRadius: '8px', border: 'none', backgroundColor: '#c0392b', color: 'white', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+      > 🔄 Play Again
+      </button>
+    </div>
+   ) : (
 
      <h3 style={{ marginBottom: '20px' }}>
        {gameState.turn === myPlayerId ? "Your turn!" : "Opponent's turn..."}
@@ -283,8 +302,44 @@ if (gameState.status === 'rps') {
       
 
 {/* ----------------------Game Board------------------------------- */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: '30px' }}>
+        
+        {/* Left Side: Player 1's Drawer */}
+        <div style={{ width: '150px', backgroundColor: '#eef2f5', padding: '15px', borderRadius: '8px', border: '2px solid #3498db' }}>
+          <h3 style={{ color: '#3498db', textAlign: 'center', marginBottom: '10px' }}>P1 Drawer</h3>
+          {gameState.p1_inventory.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {gameState.p1_inventory.map((item, index) => (
+                <li key={index} style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold' }}>
+                  {getItemEmoji(item)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      
       <div className={`board ${myPlayerId === 'p2' ? 'board-rotated' : ''}`}>
         {cells}
+      </div>
+
+      {/* Right Side: Player 2's Drawer */}
+        <div style={{ width: '150px', backgroundColor: '#fdf1f0', padding: '15px', borderRadius: '8px', border: '2px solid #e74c3c' }}>
+          <h3 style={{ color: '#e74c3c', textAlign: 'center', marginBottom: '10px' }}>P2 Drawer</h3>
+          {gameState.p2_inventory.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {gameState.p2_inventory.map((item, index) => (
+                <li key={index} style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold' }}>
+                  {getItemEmoji(item)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
       </div>
 
 {/* ----------------------Movement Controls------------------------------- */}
