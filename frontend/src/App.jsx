@@ -222,15 +222,46 @@ if (gameState.status === 'rps') {
 
       <h2 style={{ marginBottom: '10px'}}>You are: {myPlayerId === 'p1' ? 'Player 1 (Blue)' : 'Player 2 (Red)'}</h2>
 
-      <h3 style={{ marginBottom: '20px', color: '#ff0000' }}>
-         {gameState.turn === 'p1' ? 'Player 1' : 'Player 2'} turn
-        </h3>
+      {/* ------------------------Game Status and HP system------------------------- */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '20px', backgroundColor: 'f8f9fa', padding: '15px 30px', borderRadius: '10px', border: '1px solid #ddd' }}>
+        <div>
+          <span style={{ color: '-moz-initial', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 1 HP:</span>
+          <span style={{ fontSize: '1.5rem', marginLeft: '10px' }}>  
+          {gameState.p1_hp > 0 ? '💓'.repeat(gameState.p1_hp) : '💀'} ({gameState.p1.hp}/6)
+          </span>
+        </div>
+  
+        <div style={{ borderLeft: '2px solid #ccc'}}></div>
 
-      {/* Game Board */}
+        <div>
+          <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 2 HP:</span>
+          <span style={{ fontSize: '1.5rem', marginLeft: '10px' }}>
+          {gameState.p2_hp > 0 ? '💓'.repeat(gameState.p2_hp) : '💀'} ({gameState.p2.hp}/6)
+          </span>
+        </div>  
+        </div>
+     
+  {/* ---------------------------------GAME OVER SCREEN------------------------------- */}
+  {gameState.status === 'game_over' ? (
+    <div style={{ backgroundColor: '#f8d7da', padding: '20px', borderRadius: '10px', border: '1px solid #f5c6cb', marginBottom: '20px' }}>
+      <h2 style={{ color: '#cc0000', margin: 0, animation: 'pulse 1.5s infinite' }}>
+        Game Over! {gameState.p1.hp > 0 ? 'Player 1 (Blue) Wins!' : 'Player 2 (Red) Wins!'}
+      </h2>
+    </div>
+   ) : (
+
+     <h3 style={{ marginBottom: '20px' }}>
+       {gameState.turn === myPlayerId ? "Your turn!" : "Opponent's turn..."}
+     </h3>
+   )}
+      
+
+{/* ----------------------Game Board------------------------------- */}
       <div className={`board ${myPlayerId === 'p2' ? 'board-rotated' : ''}`}>
         {cells}
       </div>
 
+{/* ----------------------Movement Controls------------------------------- */}
       <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
 
       {/* the forward button */}
@@ -269,11 +300,8 @@ if (gameState.status === 'rps') {
 
           </div>
       </div>
-    </div>
-    
+    </div> 
   );
-
 }
  
-
 export default App;

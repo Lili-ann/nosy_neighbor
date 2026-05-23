@@ -38,6 +38,7 @@ DEFAULT_GAME_STATE ={
     "p1_rps": None,
     "p2_rps": None,
     "turn": None,
+    "winner": None,
     
     #memory for player's trail path
     "p1_trail": [],
@@ -171,24 +172,44 @@ def handle_move(data):
     #check if new position is valid
     if 0 <= new_x <= 10 and 0 <= new_y <= 10:
         
-        #drops breadcrumb in the trail list, to keep track of player's path.
-        state[f"{player}_trail"].append({"x":current_x, "y" : current_y})
+        opponent ="p2" if player == "p1" else "p1"
+        opponent_trail = state[f"{opponent}_trail"]
         
-        #if move is safe, gets updated
+        #checks if player stepped on opponent's trail.
+        stepped_on_enemy_trail = False
+        for spot in opponent_trail:
+            if spot["x"] == new_x and spot["y"] == new_y:
+                #lose 1 HP if stepped on opponent's trail
+                state[player]["hp"] -= 1
+                 
+                #steal territory by removing the spot from opponent's trail and adding it to player's trail             
+                opponent_trail.remove(spot)
+                state[f"{player}_trail"].append({"x": new_x, "y": new_y})  
+                
+                stepped_on_enemy_trail =True
+                print(f"{player} stole {opponent}'s trail and lost 1 hp!") 
+                break        
+                              
+         #if player did not step on enemy trail                     
+        if not stepped_on_enemy_trail:
+            state[f"{player}_trail"].append({"x": current_x, "y": current_y})    
+        
+        #if move is safe, player move to new position.
         state[player]["x"] = new_x
         state[player]["y"] = new_y
-        
-        
-        #switch players turn
-        if player =="p1":
-            state["turn"] = "p2"
-        else:
-            state["turn"] = "p1"
-            
+                     
+    
+            #switch players only when game is still playing.
+        if state["status"] != "game_over":
+            if player =="p1":
+                state["turn"] = "p2"
+            else:
+                state["turn"] = "p1"
+                
         #save to redis
         r.set('game_state', json.dumps(state))
         emit('game_update', state, broadcast=True)
-        
+            
 
 
 
