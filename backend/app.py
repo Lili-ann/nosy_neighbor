@@ -235,7 +235,35 @@ def handle_move(data):
         r.set('game_state', json.dumps(state))
         emit('game_update', state, broadcast=True)
             
-
+#==============================RESET GAME LOGIC===========================
+@socketio.on('play_again')
+def handle_play_again():
+    #reset the game state to default
+    state = json.loads(r.get('game_state'))
+    
+    if state["status"] != "game_over":
+        
+        #players go back to RPS
+        state['status'] = "rps"
+        
+        #Delete previous game state data
+        state['p1_rps'] = None
+        state['p2_rps'] = None
+        state['turn'] = None
+        state['winner'] = None
+        
+        state['p1_trail'] = []
+        state['p2_trail'] = []
+        
+        #reset position and HP
+        state['p1'] = {"x":5, "y":10, "hp": 6}
+        state['p2'] = {"x":5, "y":0, "hp": 6}
+            
+    #save to redis
+    r.set('game_state', json.dumps(state))
+    emit('game_update', state, broadcast=True)
+    
+    
 
 
 

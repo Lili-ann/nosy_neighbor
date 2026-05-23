@@ -91,6 +91,10 @@ function App() {
   };
 
 
+//-----------------------------handle play again button------------------------------
+  const handlePlayAgain = () => {
+    socket.emit('play_again');
+  };
  
 
 
@@ -256,13 +260,21 @@ if (gameState.status === 'rps') {
         </div>
      
   {/* ---------------------------------GAME OVER SCREEN------------------------------- */}
-  {gameState.status === 'game_over' ? (
-    <div style={{ backgroundColor: '#f8d7da', padding: '20px', borderRadius: '10px', border: '1px solid #f5c6cb', marginBottom: '20px' }}>
-     <h2 style={{ color: '#cc0000', margin: 0, animation: 'pulse 1.5s infinite' }}>
-          🚨 GAME OVER! {gameState.winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!'} 🚨
-        </h2>
-    </div>
-   ) : (
+ {gameState.status === 'game_over' ? (
+        <div style={{ backgroundColor: '#ffcccc', padding: '20px', borderRadius: '8px', border: '2px solid #ff0000', marginBottom: '20px', textAlign: 'center' }}>
+          <h2 style={{ color: '#cc0000', margin: '0 0 15px 0', animation: 'pulse 1.5s infinite' }}>
+            🚨 GAME OVER! {gameState.winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!'} 🚨
+          </h2>
+          
+          {/* The Play Again Button */}
+          <button 
+            onClick={handlePlayAgain}
+            style={{ padding: '10px 25px', fontSize: '1.2rem', cursor: 'pointer', borderRadius: '8px', border: 'none', backgroundColor: '#c0392b', color: 'white', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+          >
+            🔄 Play Again
+          </button>
+        </div>
+      ) : (
 
      <h3 style={{ marginBottom: '20px' }}>
        {gameState.turn === myPlayerId ? "Your turn!" : "Opponent's turn..."}
