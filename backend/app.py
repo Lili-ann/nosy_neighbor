@@ -46,6 +46,9 @@ DEFAULT_GAME_STATE ={
     "walls": [],  #randomly placed wall positions
     "medkit": None, #randomly placed one medkit position
     
+    "p1_extra_turn": False, #track if player has an extra turn from boots powerup
+    "p2_extra_turn": False,
+    
     #memory for player's trail path
     "p1_trail": [],
     "p2_trail": [],
@@ -275,14 +278,77 @@ def handle_move(data):
     
             #switch players only when game is still playing.
         if state["status"] != "game_over":
-            if player =="p1":
-                state["turn"] = "p2"
-            else:
-                state["turn"] = "p1"
-                
+            
+            #did player use sprint boot
+            if state.get(f"{player}_extra_turn"):
+                state[f"{player}_extra_turn"] = False
+                print(f"{player} used sprint boots got 2x turns!")
+            else:        
+                if player =="p1":
+                    state["turn"] = "p2"
+                else:
+                    state["turn"] = "p1"
+                    
         #save to redis
         r.set('game_state', json.dumps(state))
         emit('game_update', state, broadcast=True)
+    
+#======================================Powerup Logic===========================
+@socketio.on('use_powerup')
+def handle_powerup(data):
+    state = json.loads(r.get('game_state'))
+    player = data['player']
+    item = data['item']
+    
+    if state["status"] != "playing" or state["turn"] != player:
+        return
+    
+    #check if they have the powerup in their inventory
+    inventory = state[f"{player}_inventory"]
+    if item not in inventory:
+        return
+    
+    #remove item from inventory after use
+    inventory.remove(item)
+    
+    #BOMB LOGIC
+    if item =="bomb":
+        opponent = "p2" if player == "p1" else "p1"
+        px = state[player]["x"]
+        py = state[player]["y"]
+        
+
+        surviving_trails =[]
+        for spot in state[f"{opponent}_trail"]:
+            if abs(spot["x"] - px) <= 1 and abs(spot["y"] - py) <= 1:
+                pass
+            else:
+                surviving_trails.append(spot)
+                
+        state[f"{opponent}_trail"] = surviving_trails
+        print(f"{player} used a bomb! {opponent}'s trail was damaged!")
+        
+        
+        #BOOTS LOGIC
+    elif item == "boots":
+        state[f"{player}_extra_turn"] = True
+        print(f"{player} used boots! They get an extra turn!")
+        
+    
+    r.set('game_state', json.dumps(state))
+    emit('game_update', state, broadcast=True)
+    
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    
             
 #==============================RESET GAME LOGIC===========================
 @socketio.on('play_again')
@@ -305,6 +371,9 @@ def handle_play_again():
         state['p2_inventory'] = []
         state['walls'] = []
         state['medkit'] = None
+        
+        state['p1_extra_turn'] = False
+        state['p2_extra_turn'] = False
         
         state['p1_trail'] = []
         state['p2_trail'] = []

@@ -31,6 +31,14 @@ function App() {
       if (e.key === 'ArrowLeft') socket.emit('move_player', { player: myPlayerId, direction: 'left' });
       if (e.key === 'ArrowRight') socket.emit('move_player', { player: myPlayerId, direction: 'right' });
 
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleUsePowerup('bomb'); //spacebar uses bomb powerup
+      }
+      if (e.key === 'Shift') {
+        e.preventDefault();
+        handleUsePowerup('boots'); //shift button uses boots powerup
+      }
     };
 
       // tell browers to listen for key pressed
@@ -90,6 +98,15 @@ function App() {
     socket.emit('play_rps', { player: myPlayerId, choice: choice });
   };
 
+
+
+// ----------------------------------handle powerup usage------------------------------
+  const handleUsePowerup = (item) => {
+
+    if (gameState.turn === myPlayerId) {
+      socket.emit('use_powerup', { player: myPlayerId, item: item });
+    }
+};
 
 //-----------------------------handle play again button------------------------------
   const handlePlayAgain = () => {
@@ -327,9 +344,18 @@ const getItemEmoji = (item) => {
             ) : (
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {gameState.p1_inventory.map((item, index) => (
-                  <li key={index} style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold' }}>
-                    {getItemEmoji(item)}
-                  </li>
+                  <li 
+                  key={index} 
+                  onClick={() => handleUsePowerup(item)}
+                  style={{ 
+                    backgroundColor: '#fff', padding: '8px', borderRadius: '5px', 
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold',
+                    cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed',
+                    border: '2px solid transparent', transition: '0.2s'
+                  }}
+                >
+                  {getItemEmoji(item)}
+                </li>
                 ))}
               </ul>
             )}
@@ -350,9 +376,18 @@ const getItemEmoji = (item) => {
             ) : (
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {gameState.p2_inventory.map((item, index) => (
-                  <li key={index} style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold' }}>
-                    {getItemEmoji(item)}
-                  </li>
+                  <li 
+                  key={index} 
+                  onClick={() => handleUsePowerup(item)}
+                  style={{ 
+                    backgroundColor: '#fff', padding: '8px', borderRadius: '5px', 
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold',
+                    cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed',
+                    border: '2px solid transparent', transition: '0.2s'
+                  }}
+                >
+                  {getItemEmoji(item)}
+                </li>
                 ))}
               </ul>
             )}
