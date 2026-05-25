@@ -301,47 +301,51 @@ const getItemEmoji = (item) => {
    )}
       
 
-{/* ----------------------Game Board------------------------------- */}
+{/* ----------------------Game Board & Drawers Layout------------------------------- */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: '30px' }}>
         
-        {/* Left Side: Player 1's Drawer */}
-        <div style={{ width: '150px', backgroundColor: '#eef2f5', padding: '15px', borderRadius: '8px', border: '2px solid #3498db' }}>
-          <h3 style={{ color: '#3498db', textAlign: 'center', marginBottom: '10px' }}>P1 Drawer</h3>
-          {gameState.p1_inventory.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {gameState.p1_inventory.map((item, index) => (
-                <li key={index} style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold' }}>
-                  {getItemEmoji(item)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {/* Left Side: Player 1's Drawer (ONLY SHOWS FOR P1) */}
+        {myPlayerId === 'p1' && (
+          <div style={{ width: '150px', backgroundColor: '#eef2f5', padding: '15px', borderRadius: '8px', border: '2px solid #3498db' }}>
+            <h3 style={{ color: '#3498db', textAlign: 'center', marginBottom: '10px' }}>Your Drawer</h3>
+            {gameState.p1_inventory.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {gameState.p1_inventory.map((item, index) => (
+                  <li key={index} style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold' }}>
+                    {getItemEmoji(item)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       
-      <div className={`board ${myPlayerId === 'p2' ? 'board-rotated' : ''}`}>
-        {cells}
-      </div>
-
-      {/* Right Side: Player 2's Drawer */}
-        <div style={{ width: '150px', backgroundColor: '#fdf1f0', padding: '15px', borderRadius: '8px', border: '2px solid #e74c3c' }}>
-          <h3 style={{ color: '#e74c3c', textAlign: 'center', marginBottom: '10px' }}>P2 Drawer</h3>
-          {gameState.p2_inventory.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {gameState.p2_inventory.map((item, index) => (
-                <li key={index} style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold' }}>
-                  {getItemEmoji(item)}
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* Center: The actual Game Board */}
+        <div className={`board ${myPlayerId === 'p2' ? 'board-rotated' : ''}`}>
+          {cells}
         </div>
 
-      </div>
+        {/* Right Side: Player 2's Drawer (ONLY SHOWS FOR P2) */}
+        {myPlayerId === 'p2' && (
+          <div style={{ width: '150px', backgroundColor: '#fdf1f0', padding: '15px', borderRadius: '8px', border: '2px solid #e74c3c' }}>
+            <h3 style={{ color: '#e74c3c', textAlign: 'center', marginBottom: '10px' }}>Your Drawer</h3>
+            {gameState.p2_inventory.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {gameState.p2_inventory.map((item, index) => (
+                  <li key={index} style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold' }}>
+                    {getItemEmoji(item)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
+      </div>
 {/* ----------------------Movement Controls------------------------------- */}
       <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
 

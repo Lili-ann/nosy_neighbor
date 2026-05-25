@@ -44,7 +44,7 @@ DEFAULT_GAME_STATE ={
     "p1_inventory": [],  #storing player1 powerups
     "p2_inventory": [], #storing player2 powerups
     "walls": [],  #randomly placed wall positions
-    "medkit": [], #randomly placed one medkit position
+    "medkit": None, #randomly placed one medkit position
     
     #memory for player's trail path
     "p1_trail": [],
@@ -251,8 +251,7 @@ def handle_move(data):
                #store in player inventory if HP is already full
                 state[f"{player}_inventory"].append("medkit")
                 print(f"{player} picked up a medkit")
-                
-        state["medkit"] = None  #remove medkit from the board after pickup
+           state["medkit"] = None  #remove medkit from the board after pickup
             
     #--------------------------------------------------------------------------------------------------- 
             
