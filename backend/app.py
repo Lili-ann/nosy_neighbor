@@ -319,8 +319,17 @@ def handle_play_again():
         
         print("🔄 REMATCH INITIATED! Board cleared.")
     
-    
 
+#==============================SERVER RESET==============================
+@socketio.on('reset_server')
+def handle_reset_server():
+    #clear the game state from redis
+    r.set('game_state', json.dumps(DEFAULT_GAME_STATE)) 
+
+    state = json.loads(r.get('game_state'))
+    emit('game_update', state, broadcast=True)  #send the reset game state to everyone
+    
+    print("New Game: Game state cleared and set to default.")
 
 
 #to start the server

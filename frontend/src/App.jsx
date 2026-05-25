@@ -98,12 +98,26 @@ function App() {
  
 
 
-
+//-----------------------------handle reset server button------------------------------
+  const handleResetServer = () => {
+    //warning popup message
+    if (window.confirm("Are you sure you want to start New Game?")) {
+      socket.emit('reset_server');
+      setMyPlayerId(null); //reset local player ID to go back to lobby screen
+    }
+  };
 // ===============================THE LOBBY SCREEN - CHOOSE YOUR PLAYER=================================================
 if (!myPlayerId) {
   return (
     <div className="lobby-container">
       <h1>Welcome to Nosy Neighbor!</h1>
+      {/*----------------------new game button-------------------------------*/}
+      <button
+      onClick={handleResetServer}
+      style={{ marginTop: '20px', padding: '10px 20px', fontSize: '1rem', cursor: 'pointer', borderRadius: '5px', border: 'none', backgroundColor: '#c0392b', color: 'white' }}
+      >Start New Game</button>
+      {/*---------------------------------------------------------------------------------*/}
+
       <h2>Choose your player:</h2>
     <div style={{ display: 'flex', gap: '20px', margin: '20px' }}>
 
