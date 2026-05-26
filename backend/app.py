@@ -1,11 +1,12 @@
 import json
 import redis
+import pika
 import random
-import pika    #translator to talk to rabbitmq
 from flask import Flask
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS   #cross origin resource sharing,
 
+from audit import rabbitmq_worker
 
 #initilaize the flask app and socketio
 app = Flask(__name__)
@@ -16,14 +17,23 @@ socketio = SocketIO(app, cors_allowed_origins="*") #allows for realtime websocke
 r = redis.Redis(host='localhost', port=6379,db=0, decode_responses=True)
 #decode_reponses=True, allows us to get normal text instead of byteswhen we get the data from redis
 
-#connect to Rabbitmq
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-channel = connection.channel()
-
-# queue -> malbox
-channel.queue_declare(queue='game_moves')  
-#queue name: game_moves, where the game moves are sent from the frontend to the backend
-
+# ============================== RABBITMQ ==============================
+def publish_event(log_data):
+    """Thread-safe helper to send a single message to RabbitMQ and close the door."""
+    try:
+        # Use 'rabbitmq' because we are running inside Docker
+        temp_conn = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        temp_channel = temp_conn.channel()
+        temp_channel.queue_declare(queue='game_moves')
+        
+        # Send the message
+        temp_channel.basic_publish(exchange='', routing_key='game_moves', body=json.dumps(log_data))
+        
+        # Safely close the connection
+        temp_conn.close()
+    except Exception as e:
+        print(f"Failed to publish to RabbitMQ: {e}", flush=True)
+# =============================================================================
 
 
 @app.route('/')
@@ -186,6 +196,10 @@ def handle_move(data):
     player = data['player']
     direction = data['direction']
     
+    log_data = {"player": player, "action": "move", "details": direction}
+    publish_event(log_data)
+
+        
     #ignores move if its not player's turn or game is not playing.
     if state["status"] != "playing" or state["turn"] != player:
         return
@@ -234,6 +248,14 @@ def handle_move(data):
                 
                 print(f"{player} stole {opponent}'s tile and lost 1 hp!") 
                 break        
+                
+                steal_log ={
+                    "player": player,
+                    "action": "steal_tile",
+                    "details": f"Stole territory from {opponent} at ({new_x}, {new_y})"
+                }
+                publish_event(steal_log)
+                break
                               
             #if player did not step on enemy trail                     
             if not opponent_trail:
@@ -250,10 +272,15 @@ def handle_move(data):
                 #if HP is less than 6, heal 1 HP
                 state[player]["hp"] += 1
                 print(f"{player} picked up a medkit and healed 1 HP!")
+                
+                publish_event({"player": player, "action": "used_medkit","details": "+ 1 HP"})
            else:
                #store in player inventory if HP is already full
                 state[f"{player}_inventory"].append("medkit")
                 print(f"{player} picked up a medkit")
+                
+                publish_event({"player": player, "action": "pickup_medkit", "details": "medkit"})
+                
            state["medkit"] = None  #remove medkit from the board after pickup
             
     #--------------------------------------------------------------------------------------------------- 
@@ -299,6 +326,10 @@ def handle_powerup(data):
     state = json.loads(r.get('game_state'))
     player = data['player']
     item = data['item']
+    
+    log_data = {"player": player, "action": "use_powerup", "details": item}
+    publish_event(log_data)
+    
     
     if state["status"] != "playing" or state["turn"] != player:
         return
@@ -399,6 +430,11 @@ def handle_reset_server():
     emit('game_update', state, broadcast=True)  #send the reset game state to everyone
     
     print("New Game: Game state cleared and set to default.")
+
+            
+            
+            
+
 
 
 #to start the server
