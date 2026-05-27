@@ -376,15 +376,16 @@ def handle_powerup(data):
                   
 #==============================RESET GAME LOGIC===========================
 @socketio.on('play_again')
-def handle_play_again():
-    #reset the game state to default
+def handle_play_again(data):
     state = json.loads(r.get('game_state'))
+    player = data['player']
+    #reset the game state to default
     
     if state["status"] == "game_over":
         state[f"{player}_wants_rematch"] = True
         r.set('game_state', json.dumps(state))
         
-        if state('p1_wants_rematch') and state('p2_wants_rematch'):
+        if state.get('p1_wants_rematch') and state.get('p2_wants_rematch'):
             #players go back to RPS
             state['status'] = "rps"
             
@@ -419,7 +420,7 @@ def handle_play_again():
             print("🔄 REMATCH INITIATED! Board cleared.")
             
         else:
-            socketio.emit('rematch_requested', {"by_player": player}, broadcast=True)
+            socketio.emit('rematch_requested', {"by_player": player})
     
 
 #==============================SERVER RESET==============================
@@ -430,6 +431,9 @@ def handle_reset_server():
 
     state = json.loads(r.get('game_state'))
     emit('game_update', state, broadcast=True)  #send the reset game state to everyone
+    socketio.emit('clear_audit_logs')  # Tell frontend to clear audit logs for the new game
+    
+    socketio.emit('kick_to_lobby')  # Tell frontend to kick everyone back to the lobby screen
     
     print("New Game: Game state cleared and set to default.")
                         

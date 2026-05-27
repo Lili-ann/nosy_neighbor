@@ -33,10 +33,16 @@ function App() {
       setRematchRequested(data.by_player);
     });
 
+    socket.on('kick_to_lobby', () => {
+      setMyPlayerId(null);
+    });
+
+
     return () => {
       socket.off('new_audit_log');
       socket.off('clear_audit_logs');
       socket.off('rematch_requested');
+      socket.off('kick_to_lobby');
     };
   }, []);
 
@@ -149,8 +155,6 @@ function App() {
 //-----------------------------handle play again button------------------------------
   const handlePlayAgain = () => {
     socket.emit('play_again', { player: myPlayerId });
-
-    setAuditLogs([]); //clear audit logs when starting a new game
   };
  
 
@@ -160,9 +164,7 @@ function App() {
     //warning popup message
     if (window.confirm("Are you sure you want to start New Game?")) {
       socket.emit('reset_server');
-      setMyPlayerId(null); //reset local player ID to go back to lobby screen
 
-      setAuditLogs([]); //clear audit logs when starting a new game
     }
   };
 // ===============================THE LOBBY SCREEN - CHOOSE YOUR PLAYER=================================================
@@ -380,26 +382,48 @@ const getItemEmoji = (item) => {
       </div>
 
      
-  {/* ---------------------------------GAME OVER SCREEN------------------------------- */}
-  {gameState.status === 'game_over' ? (
-    <div style={{ backgroundColor: '#ffcccc', padding: '20px', borderRadius: '8px', border: '2px solid #ff0000', marginBottom: '20px', textAlign: 'center' }}>
-      <h2 style={{ color: '#cc0000', margin: '0 0 15px 0', animation: 'pulse 1.5s infinite' }}>
-        🚨 GAME OVER! {gameState.winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!'} 🚨
-      </h2>
-      
-      {/* The Play Again Button */}
-      <button 
-        onClick={handlePlayAgain}
-        style={{ padding: '10px 25px', fontSize: '1.2rem', cursor: 'pointer', borderRadius: '8px', border: 'none', backgroundColor: '#c0392b', color: 'white', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-      > 🔄 Play Again
-      </button>
-    </div>
-   ) : (
+ {/* ---------------------------------GAME OVER SCREEN------------------------------- */}
+      {gameState.status === 'game_over' ? (
+        <div style={{ backgroundColor: '#ffcccc', padding: '20px', borderRadius: '8px', border: '2px solid #ff0000', marginBottom: '20px', textAlign: 'center' }}>
+          <h2 style={{ color: '#cc0000', margin: '0 0 15px 0', animation: 'pulse 1.5s infinite' }}>
+            🚨 GAME OVER! {gameState.winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!'} 🚨
+          </h2>
+          
+          {/* DYNAMIC REMATCH UI */}
+          {rematchRequested === myPlayerId ? (
+              // Scenario 1: I clicked it, waiting for opponent
+              <div style={{ color: '#c0392b', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                 Waiting for opponent to accept rematch... ⏳
+              </div>
+          ) : rematchRequested !== null && rematchRequested !== myPlayerId ? (
+              // Scenario 2: Opponent clicked it, asking me
+              <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '8px', display: 'inline-block', border: '2px solid #c0392b' }}>
+                  <p style={{ margin: '0 0 10px 0', fontWeight: 'bold', color: '#333' }}>
+                      Player {rematchRequested === 'p1' ? '1' : '2'} wants a rematch!
+                  </p>
+                  <button 
+                    onClick={handlePlayAgain}
+                    style={{ padding: '8px 20px', fontSize: '1rem', cursor: 'pointer', borderRadius: '5px', border: 'none', backgroundColor: '#2ecc71', color: 'white', fontWeight: 'bold' }}
+                  > 
+                    ✅ Accept Rematch
+                  </button>
+              </div>
+          ) : (
+              // Scenario 3: Nobody has clicked it yet
+              <button 
+                onClick={handlePlayAgain}
+                style={{ padding: '10px 25px', fontSize: '1.2rem', cursor: 'pointer', borderRadius: '8px', border: 'none', backgroundColor: '#c0392b', color: 'white', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+              > 
+                🔄 Play Again
+              </button>
+          )}
 
-     <h3 style={{ marginBottom: '20px' }}>
-       {gameState.turn === myPlayerId ? "Your turn!" : "Opponent's turn..."}
-     </h3>
-   )}
+        </div>
+       ) : (
+         <h3 style={{ marginBottom: '20px' }}>
+           {gameState.turn === myPlayerId ? "Your turn!" : "Opponent's turn..."}
+         </h3>
+       )}
       
 
 {/* ----------------------Game Board & Drawers Layout------------------------------- */}
@@ -526,7 +550,7 @@ const getItemEmoji = (item) => {
         >⬆️
       </button>
 
-      <div styles={{ display: 'flex', gap: '60px' }}>
+      <div style={{ display: 'flex', gap: '60px' }}>
 
       {/* the left button */}
       <button 
