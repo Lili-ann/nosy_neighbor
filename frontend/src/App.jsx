@@ -3,11 +3,9 @@ import { io } from 'socket.io-client';
 import './App.css';
 
 //connection to backend - flask
-const socket = io('http://34.128.105.132:5000'); // Replace with your backend URL and port
+const socket = io(`http://${import.meta.env.VITE_SERVER_ID}:5000`);
 
 function App() {
-
-
 //gameState starts empty until Python sends the data
   const [gameState, setGameState] = useState(null);  
   const [myPlayerId, setMyPlayerId] = useState(null) 
