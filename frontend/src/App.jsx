@@ -15,6 +15,7 @@ function App() {
   const logsEndRef = useRef(null); // Ref to scroll to the bottom of the logs
 
   const [rematchRequested, setRematchRequested] = useState(null); // State to track if a rematch has been requested
+  const [hoveredPlayer, setHoveredPlayer] = useState(null); // State to track which player image is hovered
 
   useEffect(() => {
     // Listen for new audit logs from the backend
@@ -131,6 +132,14 @@ function App() {
     socket.emit('claim_player', playerId);
   }; 
 
+//-----------------------------handle reset server button------------------------------
+  const handleResetServer = () => {
+    //warning popup message
+    if (window.confirm("Are you sure you want to start New Game?")) {
+      socket.emit('reset_server');
+    }
+  };
+
 // ===============================THE SPLASH SCREEN=================================================
   if (!gameStarted) {
     return (
@@ -153,40 +162,74 @@ function App() {
         boxShadow: 'inset 0 0 50px rgba(30, 80, 0, 100)',
         
         margin: 0,
-        padding: 0
+        padding: 0,
+        gap: '20px',
+        paddingTop: '60px'
       }}>
         
         <button
           onClick={() => setGameStarted(true)}
           style={{ 
             // Removed marginTop since it is now perfectly centered on the background
-            padding: '15px 90px', 
+            padding: '8px 70px', 
             fontSize: '2.5rem', 
             cursor: 'pointer', 
             borderRadius: '12px', 
             border: 'none', 
-            backgroundColor: '#f39c12', 
+            backgroundColor: '#ff9d00', 
             color: 'white', 
             fontWeight: 'bold',
             fontFamily: 'inherit',
-            boxShadow: ' inset 0 0 10px rgba(0, 0, 0, 90)',
+            boxShadow: '0 18px 35px rgba(0, 0, 0, 0.85), inset 0 0 10px rgb(255, 255, 255)',
             transition: 'transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease',
             zIndex: 10 // Ensures the button stays clickable above the background
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-0.5px) scale(1)';
-            e.target.style.boxShadow = '0 18px 35px rgba(0, 0, 0, 0.85), inset 0 0 10px rgb(255, 255, 255)';
-            e.target.style.backgroundColor = '#ffad1f';
+            e.target.style.transform = 'translateY(-0px) scale(1)';
+            e.target.style.boxShadow = ' inset 0 0 7px rgba(0, 0, 0, 100)';
+            e.target.style.backgroundColor = '#f9a514';
           }}
           onMouseLeave={(e) => {
             e.target.style.transform = 'translateY(0) scale(1)';
-            e.target.style.boxShadow = ' inset 0 0 10px rgba(0, 0, 0, 50)';
+            e.target.style.boxShadow = '0 18px 35px rgba(0, 0, 0, 0.85), inset 0 0 10px rgb(255, 255, 255)';
             e.target.style.backgroundColor = '#f39c12';
           }}
           onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
           onMouseUp={(e) => e.target.style.transform = 'translateY(-6px) scale(1.06)'}
         >
           Play
+        </button>
+
+        <button
+          onClick={handleResetServer}
+          style={{ 
+            padding: '8px 50px', 
+            fontSize: '1.8rem', 
+            cursor: 'pointer', 
+            borderRadius: '10px', 
+            border: 'none', 
+            backgroundColor: '#cf2525', 
+            color: 'white', 
+            fontWeight: 'bold',
+            fontFamily: 'inherit',
+            boxShadow: '0 18px 35px rgba(0, 0, 0, 0.85), inset 0 0 10px rgb(255, 243, 243)',
+            transition: 'transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease',
+            zIndex: 10
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'translateY(-0.5px) scale(1)';
+            e.target.style.boxShadow = ' inset 0 0 10px rgba(0, 0, 0, 50)';
+            e.target.style.backgroundColor = '#dc1515';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'translateY(0) scale(1)';
+            e.target.style.boxShadow = '0 18px 35px rgba(0, 0, 0, 0.85), inset 0 0 10px rgb(255, 255, 255)';
+            e.target.style.backgroundColor = '#e40404';
+          }}
+          onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
+          onMouseUp={(e) => e.target.style.transform = 'translateY(-6px) scale(1.06)'}
+        >
+          New Game
         </button>
       </div>
     );
@@ -221,47 +264,202 @@ function App() {
   };
  
 
-
-//-----------------------------handle reset server button------------------------------
-  const handleResetServer = () => {
-    //warning popup message
-    if (window.confirm("Are you sure you want to start New Game?")) {
-      socket.emit('reset_server');
-
-    }
-  };
 // ===============================THE LOBBY SCREEN - CHOOSE YOUR PLAYER=================================================
 if (!myPlayerId) {
   return (
-    <div className="lobby-container">
-      <h1>Welcome to Nosy Neighbor!</h1>
-      {/*----------------------new game button-------------------------------*/}
-      <button
-      onClick={handleResetServer}
-      style={{ marginTop: '20px', padding: '10px 20px', fontSize: '1rem', cursor: 'pointer', borderRadius: '5px', border: 'none', backgroundColor: '#c0392b', color: 'white' }}
-      >Start New Game</button>
-      {/*---------------------------------------------------------------------------------*/}
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      position: 'fixed',
+      inset: 0,
+      height: '100vh',
+      width: '100vw',
+      backgroundImage: 'url("/gamebg.png")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      overflow: 'hidden',
+      paddingTop: '8vh' // Pushes content slightly down
+    }}>
+      
+      {/* --- BACK BUTTON --- */}
+      <img 
+        src="/backbtn.svg" 
+        alt="Back to Splash" 
+        onClick={() => setGameStarted(false)}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          width: '60px', 
+          cursor: 'pointer',
+          transition: 'transform 0.2s',
+          filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.4))'
+        }}
+        onMouseOver={(e) => e.target.style.transform = 'scale(1.1)'}
+        onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+      />
 
-      <h2>Choose your player:</h2>
-    <div style={{ display: 'flex', gap: '20px', margin: '20px' }}>
+      {/* --- TITLE --- */}
+      <h1 style={{
+        color: 'white',
+        fontSize: '4.5rem',
+        fontFamily: 'cursive, sans-serif', 
+        textShadow: '3px 3px 0px rgba(0,0,0,0.7), 0px 5px 15px rgba(0,0,0,0.5)',
+        margin: '0 0 5vh 0',
+        letterSpacing: '2px'
+      }}>
+        Choose Player
+      </h1>
 
-{/*the buttons get disabled when its already taken */}
-      <button
-       onClick={() => handleChoosePlayer('p1')}
-       disabled={gameState.p1_claimed}
-       style={{ backgroundColor: '#3498db', color: 'white', padding: '10px 20px', 
-        border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-       >{gameState.p1_claimed ? 'P1 Taken' : 'Player 1 (Blue)'}
-       </button>
+      {/* --- CHARACTER SELECTORS --- */}
+      <div style={{ display: 'flex', gap: '8vw', alignItems: 'flex-end', justifyContent: 'center' }}>
+        
+        {/* BOB (Player 1) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
+          <img 
+            src="/bob.svg" 
+            alt="Bob" 
+            onMouseEnter={() => setHoveredPlayer('p1')}
+            onMouseLeave={() => setHoveredPlayer(null)}
+            style={{ 
+              height: '45vh', 
+              // Grays out the character if taken
+              filter: gameState.p1_claimed ? 'grayscale(100%) brightness(50%)' : 'drop-shadow(0 15px 15px rgba(0,0,0,0.5))',
+              transition: 'filter 0.3s, transform 0.2s',
+              cursor: 'pointer',
+              transform: hoveredPlayer === 'p1' ? 'scale(1.05)' : 'scale(1)'
+            }} 
+          />
+          
+          {/* BOB POPUP */}
+          {hoveredPlayer === 'p1' && (
+            <div style={{
+              position: 'center',
+              top: '-80px',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              color: '#ffa500',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              border: '2px solid #ffa500',
+              boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
+              zIndex: 100,
+              animation: 'fadeIn 0.3s ease'
+            }}>
+              The Neighbor
+            </div>
+          )}
+          
+          <button
+            onClick={() => handleChoosePlayer('p1')}
+            disabled={gameState.p1_claimed}
+            style={{ 
+              backgroundColor: gameState.p1_claimed ? '#7f8c8d' : '#ffa500', // Orange matching your design
+              color: 'white', 
+              padding: '12px 60px', 
+              fontSize: '2rem',
+              fontWeight: 'bold',
+              fontFamily: 'cursive, sans-serif',
+              border: 'none', 
+              borderRadius: '15px', 
+              cursor: gameState.p1_claimed ? 'not-allowed' : 'pointer',
+              boxShadow: '0 8px 0px rgba(200, 100, 0, 1), 0 15px 20px rgba(0,0,0,0.4)', // 3D button effect
+              textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
+              transition: 'transform 0.1s, box-shadow 0.1s'
+            }}
+            onMouseDown={(e) => { 
+              if(!gameState.p1_claimed) {
+                e.target.style.transform = 'translateY(8px)';
+                e.target.style.boxShadow = '0 0px 0px rgba(200, 100, 0, 1), 0 5px 10px rgba(0,0,0,0.4)';
+              }
+            }}
+            onMouseUp={(e) => { 
+              if(!gameState.p1_claimed) {
+                e.target.style.transform = 'translateY(0px)';
+                e.target.style.boxShadow = '0 8px 0px rgba(200, 100, 0, 1), 0 15px 20px rgba(0,0,0,0.4)';
+              }
+            }}
+          >
+            {gameState.p1_claimed ? 'Taken' : 'Bob'}
+          </button>
+        </div>
 
-      <button 
-      onClick={() => handleChoosePlayer('p2')}
-      disabled={gameState.p2_claimed}
-      style={{ backgroundColor: '#e74c3c', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-      >{gameState.p2_claimed ? 'P2 Taken' : 'Player 2 (Red)'}
-      </button>
+        {/* BIN (Player 2) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
+          <img 
+            src="/bin.svg" 
+            alt="Bin" 
+            onMouseEnter={() => setHoveredPlayer('p2')}
+            onMouseLeave={() => setHoveredPlayer(null)}
+            style={{ 
+              height: '45vh', 
+              filter: gameState.p2_claimed ? 'grayscale(100%) brightness(50%)' : 'drop-shadow(0 15px 15px rgba(0,0,0,0.5))',
+              transition: 'filter 0.3s, transform 0.2s',
+              cursor: 'pointer',
+              transform: hoveredPlayer === 'p2' ? 'scale(1.05)' : 'scale(1)'
+            }} 
+          />
+          
+          {/* BIN POPUP */}
+          {hoveredPlayer === 'p2' && (
+            <div style={{
+              position: 'center',
+              top: '-80px',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              color: '#00e640',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              border: '2px solid #00e640',
+              boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
+              zIndex: 100,
+              animation: 'fadeIn 0.3s ease'
+            }}>
+              The Spy
+            </div>
+          )}
+          
+          <button
+            onClick={() => handleChoosePlayer('p2')}
+            disabled={gameState.p2_claimed}
+            style={{ 
+              backgroundColor: gameState.p2_claimed ? '#7f8c8d' : '#00e640', // Bright green matching your design
+              color: 'white', 
+              padding: '12px 60px', 
+              fontSize: '2rem',
+              fontWeight: 'bold',
+              fontFamily: 'cursive, sans-serif',
+              border: 'none', 
+              borderRadius: '15px', 
+              cursor: gameState.p2_claimed ? 'not-allowed' : 'pointer',
+              boxShadow: '0 8px 0px rgba(0, 150, 40, 1), 0 15px 20px rgba(0,0,0,0.4)', // 3D button effect
+              textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
+              transition: 'transform 0.1s, box-shadow 0.1s'
+            }}
+            onMouseDown={(e) => { 
+              if(!gameState.p2_claimed) {
+                e.target.style.transform = 'translateY(8px)';
+                e.target.style.boxShadow = '0 0px 0px rgba(0, 150, 40, 1), 0 5px 10px rgba(0,0,0,0.4)';
+              }
+            }}
+            onMouseUp={(e) => { 
+              if(!gameState.p2_claimed) {
+                e.target.style.transform = 'translateY(0px)';
+                e.target.style.boxShadow = '0 8px 0px rgba(0, 150, 40, 1), 0 15px 20px rgba(0,0,0,0.4)';
+              }
+            }}
+          >
+            {gameState.p2_claimed ? 'Taken' : 'Bin'}
+          </button>
+        </div>
 
-    </div>
+      </div>
     </div>
   );
 }
