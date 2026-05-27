@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import './App.css';
 
@@ -6,9 +6,47 @@ import './App.css';
 const socket = io('http://localhost:5000');
 
 function App() {
+
+
 //gameState starts empty until Python sends the data
   const [gameState, setGameState] = useState(null);  
   const [myPlayerId, setMyPlayerId] = useState(null) 
+
+  const [auditLogs, setAuditLogs] = useState([]); // State to hold audit logs
+  const logsEndRef = useRef(null); // Ref to scroll to the bottom of the logs
+
+  const [rematchRequested, setRematchRequested] = useState(null); // State to track if a rematch has been requested
+
+  useEffect(() => {
+    // Listen for new audit logs from the backend
+
+    socket.on('new_audit_log', (log) => {
+      setAuditLogs((prevLogs) => [...prevLogs, log]);
+    });
+
+    socket.on('clear_audit_logs', () => {
+      setAuditLogs([]); // Clear logs when backend signals to clear (e.g., on rematch)
+      setRematchRequested(null); // Reset rematch request state when starting a new game
+    });
+
+    socket.on('rematch_requested', (data) => {
+      setRematchRequested(data.by_player);
+    });
+
+    return () => {
+      socket.off('new_audit_log');
+      socket.off('clear_audit_logs');
+      socket.off('rematch_requested');
+    };
+  }, []);
+
+
+  useEffect(() => {
+    // Scroll to the bottom of the logs when a new log is added
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [auditLogs]);
   
   //-----------------------handling movement logic---------------------------
   const handleMove = (direction) => {
@@ -110,7 +148,9 @@ function App() {
 
 //-----------------------------handle play again button------------------------------
   const handlePlayAgain = () => {
-    socket.emit('play_again');
+    socket.emit('play_again', { player: myPlayerId });
+
+    setAuditLogs([]); //clear audit logs when starting a new game
   };
  
 
@@ -121,6 +161,8 @@ function App() {
     if (window.confirm("Are you sure you want to start New Game?")) {
       socket.emit('reset_server');
       setMyPlayerId(null); //reset local player ID to go back to lobby screen
+
+      setAuditLogs([]); //clear audit logs when starting a new game
     }
   };
 // ===============================THE LOBBY SCREEN - CHOOSE YOUR PLAYER=================================================
@@ -213,7 +255,7 @@ if (gameState.status === 'rps') {
 
 const getItemEmoji = (item) => {
   if (item === "bomb") return "💣";
-  if (item === "boots") return "⚡";
+  if (item === "boots") return "👢";
   if (item === "medkit") return "💊";
   return item;
 };
@@ -292,23 +334,51 @@ const getItemEmoji = (item) => {
       <h2 style={{ marginBottom: '10px'}}>You are: {myPlayerId === 'p1' ? 'Player 1 (Blue)' : 'Player 2 (Red)'}</h2>
 
       {/* ------------------------Game Status and HP system------------------------- */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '20px', backgroundColor: 'f8f9fa', padding: '15px 30px', borderRadius: '10px', border: '1px solid #ddd' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', marginBottom: '20px', backgroundColor: '#f8f9fa', padding: '15px 30px', borderRadius: '10px', border: '1px solid #ddd' }}>
+        
+        {/* Player 1 HP */}
         <div>
           <span style={{ color: '#3498db', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 1 HP:</span>
-          <span style={{ fontSize: '1.5rem', marginLeft: '10px' }}>  
-          {gameState.p1.hp > 0 ? '💓'.repeat(gameState.p1.hp) : '💀'} ({gameState.p1.hp}/6)
+          <span style={{ fontSize: '1.5rem', marginLeft: '10px', color:'black' }}>  
+          {gameState.p1.hp > 0 ? '💓'.repeat(gameState.p1.hp) : '💀'} ({gameState.p1.hp}/3)
           </span>
         </div>
   
-        <div style={{ borderLeft: '2px solid #ccc'}}></div>
+        <div style={{ borderLeft: '2px solid #ccc', height: '30px'}}></div>
 
+        {/* Player 2 HP */}
         <div>
           <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 2 HP:</span>
-          <span style={{ fontSize: '1.5rem', marginLeft: '10px' }}>
-          {gameState.p2.hp > 0 ? '💓'.repeat(gameState.p2.hp) : '💀'} ({gameState.p2.hp}/6)
+          <span style={{ fontSize: '1.5rem', marginLeft: '10px', color:'black'  }}>
+          {gameState.p2.hp > 0 ? '💓'.repeat(gameState.p2.hp) : '💀'} ({gameState.p2.hp}/3)
           </span>
         </div>  
-        </div>
+
+        <div style={{ borderLeft: '2px solid #ccc', height: '30px'}}></div>
+
+        {/* Reset Game Button */}
+        <button 
+          onClick={handleResetServer}
+          style={{ 
+            padding: '8px 16px', 
+            fontSize: '0.9rem', 
+            cursor: 'pointer', 
+            borderRadius: '6px', 
+            border: 'none', 
+            backgroundColor: '#7f8c8d', 
+            color: 'white', 
+            fontWeight: 'bold',
+            transition: '0.2s',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#c0392b'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#7f8c8d'}
+        >
+          🔄 Reset Game
+        </button>
+
+      </div>
+
      
   {/* ---------------------------------GAME OVER SCREEN------------------------------- */}
   {gameState.status === 'game_over' ? (
@@ -335,30 +405,55 @@ const getItemEmoji = (item) => {
 {/* ----------------------Game Board & Drawers Layout------------------------------- */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: '30px' }}>
         
-        {/* Left Side: Player 1's Drawer (ONLY SHOWS FOR P1) */}
+        {/* Left Side: Player 1's Sidebar (Drawer + Audit Log) */}
         {myPlayerId === 'p1' && (
-          <div style={{ width: '150px', backgroundColor: '#eef2f5', padding: '15px', borderRadius: '8px', border: '2px solid #3498db' }}>
-            <h3 style={{ color: '#3498db', textAlign: 'center', marginBottom: '10px' }}>Your Drawer</h3>
-            {gameState.p1_inventory.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
-            ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {gameState.p1_inventory.map((item, index) => (
-                  <li 
-                  key={index} 
-                  onClick={() => handleUsePowerup(item)}
-                  style={{ 
-                    backgroundColor: '#fff', padding: '8px', borderRadius: '5px', 
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold',
-                    cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed',
-                    border: '2px solid transparent', transition: '0.2s'
-                  }}
-                >
-                  {getItemEmoji(item)}
-                </li>
-                ))}
-              </ul>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+            {/* P1 Drawer */}
+            <div style={{ width: '150px', backgroundColor: '#eef2f5', padding: '15px', borderRadius: '8px', border: '2px solid #3498db' }}>
+              <h3 style={{ color: '#3498db', textAlign: 'center', marginBottom: '10px' }}>Your Drawer</h3>
+              {gameState.p1_inventory.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {gameState.p1_inventory.map((item, index) => (
+                    <li 
+                      key={index} 
+                      onClick={() => handleUsePowerup(item)}
+                      style={{ 
+                        backgroundColor: '#fff', padding: '8px', borderRadius: '5px', 
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold',
+                        cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed',
+                        border: '2px solid transparent', transition: '0.2s'
+                      }}
+                    >
+                      {getItemEmoji(item)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* P1 Audit Log */}
+            <div style={{ width: '280px', height: '380px', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+                <div style={{ backgroundColor: '#0f172a', color: '#34d399', padding: '12px', fontWeight: 'bold', fontSize: '12px', letterSpacing: '2px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
+                    LIVE AUDIT LOG
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '16px', fontSize: '12px', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {auditLogs.length === 0 ? (
+                        <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginTop: '40px' }}>Waiting for events...</div>
+                    ) : (
+                        auditLogs.map((log, index) => (
+                            <div key={index} style={{ borderLeft: '2px solid #10b981', paddingLeft: '12px' }}>
+                                <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>[{log.player.toUpperCase()}]</span> 
+                                <span style={{ color: '#cbd5e1', marginLeft: '8px' }}>{log.action}</span>
+                                <div style={{ color: '#64748b', marginTop: '4px' }}>{log.details}</div>
+                            </div>
+                        ))
+                    )}
+                    <div ref={logsEndRef} />
+                </div>
+            </div>
           </div>
         )}
       
@@ -367,30 +462,55 @@ const getItemEmoji = (item) => {
           {cells}
         </div>
 
-        {/* Right Side: Player 2's Drawer (ONLY SHOWS FOR P2) */}
+        {/* Right Side: Player 2's Sidebar (Drawer + Audit Log) */}
         {myPlayerId === 'p2' && (
-          <div style={{ width: '150px', backgroundColor: '#fdf1f0', padding: '15px', borderRadius: '8px', border: '2px solid #e74c3c' }}>
-            <h3 style={{ color: '#e74c3c', textAlign: 'center', marginBottom: '10px' }}>Your Drawer</h3>
-            {gameState.p2_inventory.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
-            ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {gameState.p2_inventory.map((item, index) => (
-                  <li 
-                  key={index} 
-                  onClick={() => handleUsePowerup(item)}
-                  style={{ 
-                    backgroundColor: '#fff', padding: '8px', borderRadius: '5px', 
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold',
-                    cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed',
-                    border: '2px solid transparent', transition: '0.2s'
-                  }}
-                >
-                  {getItemEmoji(item)}
-                </li>
-                ))}
-              </ul>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+            {/* P2 Drawer */}
+            <div style={{ width: '150px', backgroundColor: '#fdf1f0', padding: '15px', borderRadius: '8px', border: '2px solid #e74c3c' }}>
+              <h3 style={{ color: '#e74c3c', textAlign: 'center', marginBottom: '10px' }}>Your Drawer</h3>
+              {gameState.p2_inventory.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {gameState.p2_inventory.map((item, index) => (
+                    <li 
+                      key={index} 
+                      onClick={() => handleUsePowerup(item)}
+                      style={{ 
+                        backgroundColor: '#fff', padding: '8px', borderRadius: '5px', 
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold',
+                        cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed',
+                        border: '2px solid transparent', transition: '0.2s'
+                      }}
+                    >
+                      {getItemEmoji(item)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* P2 Audit Log */}
+            <div style={{ width: '280px', height: '380px', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+                <div style={{ backgroundColor: '#0f172a', color: '#34d399', padding: '12px', fontWeight: 'bold', fontSize: '12px', letterSpacing: '2px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
+                    LIVE AUDIT LOG
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '16px', fontSize: '12px', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {auditLogs.length === 0 ? (
+                        <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginTop: '40px' }}>Waiting for events...</div>
+                    ) : (
+                        auditLogs.map((log, index) => (
+                            <div key={index} style={{ borderLeft: '2px solid #10b981', paddingLeft: '12px' }}>
+                                <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>[{log.player.toUpperCase()}]</span> 
+                                <span style={{ color: '#cbd5e1', marginLeft: '8px' }}>{log.action}</span>
+                                <div style={{ color: '#64748b', marginTop: '4px' }}>{log.details}</div>
+                            </div>
+                        ))
+                    )}
+                    <div ref={logsEndRef} />
+                </div>
+            </div>
           </div>
         )}
 
@@ -434,6 +554,7 @@ const getItemEmoji = (item) => {
 
           </div>
       </div>
+
     </div> 
   );
 }

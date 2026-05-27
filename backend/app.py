@@ -14,7 +14,7 @@ CORS(app)     #it allows frontend to connect with backend even if they are on di
 socketio = SocketIO(app, cors_allowed_origins="*") #allows for realtime websocket communication between frontend and backend
 
 #Conenct to redis
-r = redis.Redis(host='localhost', port=6379,db=0, decode_responses=True)
+r = redis.Redis(host='redis', port=6379,db=0, decode_responses=True)
 #decode_reponses=True, allows us to get normal text instead of byteswhen we get the data from redis
 
 # ============================== RABBITMQ ==============================
@@ -22,12 +22,14 @@ def publish_event(log_data):
     """Thread-safe helper to send a single message to RabbitMQ and close the door."""
     try:
         # Use 'rabbitmq' because we are running inside Docker
-        temp_conn = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        temp_conn = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
         temp_channel = temp_conn.channel()
-        temp_channel.queue_declare(queue='game_moves')
+        temp_channel.queue_declare(queue='game_moves', durable=True)
         
         # Send the message
         temp_channel.basic_publish(exchange='', routing_key='game_moves', body=json.dumps(log_data))
+        
+        socketio.emit('new_audit_log', log_data)  # Send the log data to the frontend in real-time
         
         # Safely close the connection
         temp_conn.close()
@@ -64,8 +66,11 @@ DEFAULT_GAME_STATE ={
     "p2_trail": [],
     
     #players territory on grid
-    "p1": {"x":5, "y":10, "hp": 6}, #player 1 starts at the bottom middle of the grid, with 6 hp
-    "p2": {"x":5, "y":0, "hp": 6},  #player 2 starts at the top middle of the grid, with 6 hp
+    "p1": {"x":5, "y":10, "hp": 3}, #player 1 starts at the bottom middle of the grid, with 6 hp
+    "p2": {"x":5, "y":0, "hp": 3},  #player 2 starts at the top middle of the grid, with 6 hp
+    
+    'p1_wants_rematch': False,
+    'p2_wants_rematch': False
 }
 
 #===============================MOVEMENT CONTROLL===============================
@@ -196,13 +201,12 @@ def handle_move(data):
     player = data['player']
     direction = data['direction']
     
-    log_data = {"player": player, "action": "move", "details": direction}
-    publish_event(log_data)
-
-        
     #ignores move if its not player's turn or game is not playing.
     if state["status"] != "playing" or state["turn"] != player:
         return
+    
+    log_data = {"player": player, "action": "move", "details": direction}
+    publish_event(log_data)
         
     #get current position
     current_x = state[player]["x"]
@@ -268,8 +272,8 @@ def handle_move(data):
     # ------------------------------check for powerup pickups-----------------------------
         #check if player stepped on a medkit
         if state["medkit"] and new_x == state["medkit"]["x"] and new_y == state["medkit"]["y"]:
-           if state[player]["hp"] < 6:
-                #if HP is less than 6, heal 1 HP
+           if state[player]["hp"] < 3:
+                #if HP is less than 3, heal 1 HP
                 state[player]["hp"] += 1
                 print(f"{player} picked up a medkit and healed 1 HP!")
                 
@@ -327,17 +331,18 @@ def handle_powerup(data):
     player = data['player']
     item = data['item']
     
-    log_data = {"player": player, "action": "use_powerup", "details": item}
-    publish_event(log_data)
-    
-    
+    #Is the game playing, and is it their turn?
     if state["status"] != "playing" or state["turn"] != player:
         return
     
-    #check if they have the powerup in their inventory
+    #Do they actually own the item?
     inventory = state[f"{player}_inventory"]
     if item not in inventory:
         return
+    
+    
+    log_data = {"player": player, "action": "use_powerup", "details": item}
+    publish_event(log_data)
     
     #remove item from inventory after use
     inventory.remove(item)
@@ -368,19 +373,7 @@ def handle_powerup(data):
     
     r.set('game_state', json.dumps(state))
     emit('game_update', state, broadcast=True)
-    
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    
-            
+                  
 #==============================RESET GAME LOGIC===========================
 @socketio.on('play_again')
 def handle_play_again():
@@ -388,36 +381,45 @@ def handle_play_again():
     state = json.loads(r.get('game_state'))
     
     if state["status"] == "game_over":
-        
-        #players go back to RPS
-        state['status'] = "rps"
-        
-        #Delete previous game state data
-        state['p1_rps'] = None
-        state['p2_rps'] = None
-        state['turn'] = None
-        state['winner'] = None
-        
-        state['p1_inventory'] = []
-        state['p2_inventory'] = []
-        state['walls'] = []
-        state['medkit'] = None
-        
-        state['p1_extra_turn'] = False
-        state['p2_extra_turn'] = False
-        
-        state['p1_trail'] = []
-        state['p2_trail'] = []
-        
-        #reset position and HP
-        state['p1'] = {"x":5, "y":10, "hp": 6}
-        state['p2'] = {"x":5, "y":0, "hp": 6}
-            
-        #save to redis
+        state[f"{player}_wants_rematch"] = True
         r.set('game_state', json.dumps(state))
-        emit('game_update', state, broadcast=True)
         
-        print("🔄 REMATCH INITIATED! Board cleared.")
+        if state('p1_wants_rematch') and state('p2_wants_rematch'):
+            #players go back to RPS
+            state['status'] = "rps"
+            
+            #Delete previous game state data
+            state['p1_rps'] = None
+            state['p2_rps'] = None
+            state['turn'] = None
+            state['winner'] = None
+            
+            state['p1_inventory'] = []
+            state['p2_inventory'] = []
+            state['walls'] = []
+            state['medkit'] = None
+            
+            state['p1_extra_turn'] = False
+            state['p2_extra_turn'] = False
+            
+            state['p1_trail'] = []
+            state['p2_trail'] = []
+            
+            #reset position and HP
+            state['p1'] = {"x":5, "y":10, "hp": 3}
+            state['p2'] = {"x":5, "y":0, "hp": 3}
+            
+            state['p1_wants_rematch'] = False
+            state['p2_wants_rematch'] = False
+                
+            #save to redis
+            r.set('game_state', json.dumps(state))
+            emit('game_update', state, broadcast=True)
+            socketio.emit('clear_audit_logs')  # Tell frontend to clear audit logs for the new game
+            print("🔄 REMATCH INITIATED! Board cleared.")
+            
+        else:
+            socketio.emit('rematch_requested', {"by_player": player}, broadcast=True)
     
 
 #==============================SERVER RESET==============================
@@ -430,13 +432,8 @@ def handle_reset_server():
     emit('game_update', state, broadcast=True)  #send the reset game state to everyone
     
     print("New Game: Game state cleared and set to default.")
-
-            
-            
-            
-
-
+                        
 
 #to start the server
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

@@ -7,9 +7,9 @@ def rabbitmq_worker():
     """Runs continuously, listening for the game events to log """    
     try:
         # Use 'rabbitmq' because we are running inside Docker
-        worker_conn = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        worker_conn = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
         worker_channel = worker_conn.channel()
-        worker_channel.queue_declare(queue='game_moves')
+        worker_channel.queue_declare(queue='game_moves', durable=True)
         
         def callback(ch, method, properties, body):
             event = json.loads(body)
@@ -33,3 +33,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("\nAudit Worker shut down gracefully.", flush=True)
         sys.exit(0)
+        
