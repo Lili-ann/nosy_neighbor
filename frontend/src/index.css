@@ -1,0 +1,11 @@
+html,
+body,
+#root {
+  max-width: 100%;
+  height: auto;
+  margin: auto;
+}
+
+body {
+  overflow: hidden;
+}

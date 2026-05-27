@@ -6,6 +6,7 @@ import './App.css';
 const socket = io(`http://${import.meta.env.VITE_SERVER_ID}:5000`);
 
 function App() {
+  const [gameStarted, setGameStarted] = useState(false); // State to track if the game has started
 //gameState starts empty until Python sends the data
   const [gameState, setGameState] = useState(null);  
   const [myPlayerId, setMyPlayerId] = useState(null) 
@@ -129,6 +130,70 @@ function App() {
     setMyPlayerId(playerId);
     socket.emit('claim_player', playerId);
   }; 
+
+// ===============================THE SPLASH SCREEN=================================================
+  if (!gameStarted) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        position: 'fixed',
+        inset: 0,
+        height: '100vh',  // Fits the real device viewport, including mobile browser bars
+        maxwidth: '100vw',
+        overflow: 'hidden',
+        
+        // THE MAGIC FULLSCREEN SETTINGS:
+        backgroundImage: 'url("/homepg.png")',
+        backgroundSize: 'cover',       // Stretches/shrinks image to fill space without distortion
+        backgroundPosition: 'center',  // Keeps the most important part of the image centered
+        backgroundRepeat: 'no-repeat',
+        boxShadow: 'inset 0 0 50px rgba(30, 80, 0, 100)',
+        
+        margin: 0,
+        padding: 0
+      }}>
+        
+        <button
+          onClick={() => setGameStarted(true)}
+          style={{ 
+            // Removed marginTop since it is now perfectly centered on the background
+            padding: '15px 90px', 
+            fontSize: '2.5rem', 
+            cursor: 'pointer', 
+            borderRadius: '12px', 
+            border: 'none', 
+            backgroundColor: '#f39c12', 
+            color: 'white', 
+            fontWeight: 'bold',
+            fontFamily: 'inherit',
+            boxShadow: ' inset 0 0 10px rgba(0, 0, 0, 90)',
+            transition: 'transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease',
+            zIndex: 10 // Ensures the button stays clickable above the background
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'translateY(-0.5px) scale(1)';
+            e.target.style.boxShadow = '0 18px 35px rgba(0, 0, 0, 0.85), inset 0 0 10px rgb(255, 255, 255)';
+            e.target.style.backgroundColor = '#ffad1f';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'translateY(0) scale(1)';
+            e.target.style.boxShadow = ' inset 0 0 10px rgba(0, 0, 0, 50)';
+            e.target.style.backgroundColor = '#f39c12';
+          }}
+          onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
+          onMouseUp={(e) => e.target.style.transform = 'translateY(-6px) scale(1.06)'}
+        >
+          Play
+        </button>
+      </div>
+    );
+  }
+  // ===============================================================================================
+
+
   if (!gameState)
     return <div className="lobby-container">
       <h2>Loading game...</h2></div>;
