@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 1. Redis Database (In-Memory Game State)
+  redis:
+    image: redis:alpine
+    container_name: nosy-redis
+    ports:
+      - "6379:6379"
+
+  # 2. RabbitMQ (Message Broker)
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: nosy-rabbitmq
+    ports:
+      - "5672:5672"   
+      - "15672:15672" 
+
+  # 3. Flask Game Server
+  backend:
+    build: ./backend
+    container_name: nosy-backend
+    ports:
+      - "5000:5000"
+    # Back to the simple list format!
+    depends_on:
+      - redis
+      - rabbitmq
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python app.py
+
+  # 4. Audit Logger Microservice
+  audit-worker:
+    build: ./backend
+    container_name: nosy-audit-worker
+    depends_on:
+      - rabbitmq
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Uncommented so your worker actually runs!
+    command: python audit.py
+    restart: unless-stopped
+
+  # 5. React Frontend
+  frontend:
+    build: ./frontend
+    container_name: nosy-frontend
+    ports:
+      - "5173:5173" 
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
