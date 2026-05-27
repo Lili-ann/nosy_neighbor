@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import './App.css';
 
 //connection to backend - flask
-const socket = io('http://localhost:5000');
+const socket = io('https://34.128.105.132:5173/'); // Replace with your backend URL and port
 
 function App() {
 
