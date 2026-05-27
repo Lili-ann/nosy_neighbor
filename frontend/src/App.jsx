@@ -5,14 +5,18 @@ import './App.css';
 //connection to backend - flask
 const socket = io(`http://${import.meta.env.VITE_SERVER_ID}:5000`);
 
+
+
 function App() {
   const [gameStarted, setGameStarted] = useState(false); // State to track if the game has started
-
-
 
 //gameState starts empty until Python sends the data
   const [gameState, setGameState] = useState(null);  
   const [myPlayerId, setMyPlayerId] = useState(null) 
+
+  const [showTransition, setShowTransition] = useState(false);
+  const [countdown, setCountdown] = useState(3);
+  const prevStatusRef = useRef(null);
 
   const [auditLogs, setAuditLogs] = useState([]); // State to hold audit logs
   const logsEndRef = useRef(null); // Ref to scroll to the bottom of the logs
@@ -56,6 +60,31 @@ function App() {
       logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [auditLogs]);
+
+
+  useEffect(() => {
+    if (gameState) {
+      if (prevStatusRef.current === 'rps' && gameState.status === 'playing') {
+        setShowTransition(true);
+        setCountdown(3);
+      }
+      prevStatusRef.current = gameState.status;
+    }
+  }, [gameState?.status]);
+
+
+  useEffect(() => {
+    let timer;
+    if (showTransition && countdown > 0) {
+      timer = setTimeout(() => setCountdown(c => c - 1), 1000);
+    } else if (showTransition && countdown === 0) {
+      setShowTransition(false);
+    }
+    return () => clearTimeout(timer);
+  }, [showTransition, countdown]);
+
+
+
   
   //-----------------------handling movement logic---------------------------
   const handleMove = (direction) => {
@@ -539,33 +568,120 @@ if (gameState.status === 'waiting_for_players') {
 }
 
 //==============================THE RPS SCREEN - CHOOSE YOUR MOVE=================================================
-if (gameState.status === 'rps') {
-  const myChoice = myPlayerId ==='p1' ? gameState.p1_rps : gameState.p2_rps;
+  if (gameState.status === 'rps' || showTransition) {
+    const myChoice = myPlayerId === 'p1' ? gameState.p1_rps : gameState.p2_rps;
+    const opponentId = myPlayerId === 'p1' ? 'p2' : 'p1';
+    const opponentName = opponentId === 'p1' ? 'Bob' : 'Bin';
+    const opponentHasChosen = opponentId === 'p1' ? gameState.p1_rps : gameState.p2_rps;
 
-  return(
-    <div className="rps-container">
-      <h1 style={{ fontSize: '3rem', marginBottom: '20px', textAlign: 'center'}}>Nosy Neighbor</h1>
-      <h2> Mini-Game: Who gets to go First? </h2>
-    
-    {/* RPS buttons */}
-    {!myChoice ? (
-      <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
-        <button onClick={() => handleRpsChoice('rock')} style={{ padding: '10px 20px', fontSize: '1.2rem', border: 'none', backgroundColor: '#95a5a6', cursor: 'pointer' }}>Rock</button>
-        <button onClick={() => handleRpsChoice('paper')} style={{ padding: '10px 20px', fontSize: '1.2rem', border: 'none', backgroundColor: '#95a5a6', cursor: 'pointer' }}>Paper</button>
-        <button onClick={() => handleRpsChoice('scissors')} style={{ padding: '10px 20px', fontSize: '1.2rem', border: 'none', backgroundColor: '#95a5a6', cursor: 'pointer' }}>Scissors</button>
+    return(
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+        position: 'fixed', inset: 0, height: '100vh', width: '100vw',
+        backgroundImage: 'url("/gamebg.png")', backgroundSize: 'cover', backgroundPosition: 'center',
+        overflow: 'hidden', paddingTop: '5vh'
+      }}>
+        
+        {/* --- VS HEADER --- */}
+        <div style={{ display: 'flex', width: '80%', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8vh' }}>
+          <div style={{ backgroundColor: '#ffa500', padding: '10px 60px', borderRadius: '15px', color: 'white', fontSize: '2rem', fontWeight: 'bold', border: '3px solid #cc8400', boxShadow: '0 8px 15px rgba(0,0,0,0.5)' }}>Bob</div>
+          <div style={{ color: 'white', fontSize: '3rem', fontWeight: 'bold', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>VS</div>
+          <div style={{ backgroundColor: '#00e640', padding: '10px 60px', borderRadius: '15px', color: 'white', fontSize: '2rem', fontWeight: 'bold', border: '3px solid #00b332', boxShadow: '0 8px 15px rgba(0,0,0,0.5)' }}>Bin</div>
+        </div>
+
+        <h2 style={{ color: 'white', fontSize: '2.5rem', textShadow: '2px 2px 5px rgba(0,0,0,0.8)', marginBottom: '5vh' }}>
+          Mini-Game: Who gets to go First?
+        </h2>
+      
+        {/* RPS SELECTION AREA */}
+        {!myChoice ? (
+          // BEFORE I HAVE CHOSEN
+          <div style={{ display: 'flex', gap: '5vw', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/rock.svg" alt="Rock" onClick={() => handleRpsChoice('rock')} style={{ height: '25vh', cursor: 'pointer', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.4))', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.target.style.transform = 'scale(1.1) translateY(-10px)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1) translateY(0)'} />
+            <img src="/paper.svg" alt="Paper" onClick={() => handleRpsChoice('paper')} style={{ height: '25vh', cursor: 'pointer', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.4))', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.target.style.transform = 'scale(1.1) translateY(-10px)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1) translateY(0)'} />
+            <img src="/scissors.svg" alt="Scissors" onClick={() => handleRpsChoice('scissors')} style={{ height: '25vh', cursor: 'pointer', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.4))', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.target.style.transform = 'scale(1.1) translateY(-10px)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1) translateY(0)'} />
+          </div>
+        ) : (
+          // AFTER I HAVE CHOSEN
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '5vh' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10vw' }}>
+              
+              {/* My Locked Choice */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <h3 style={{ color: 'white', marginBottom: '20px' }}>Your Choice</h3>
+                <img src={`/${myChoice}.svg`} alt={myChoice} style={{ height: '25vh', filter: 'drop-shadow(0 15px 15px rgba(0,0,0,0.6))', transform: 'scale(1.1)' }} />
+              </div>
+
+              {/* Opponent's Choice */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <h3 style={{ color: 'white', marginBottom: '20px' }}>{opponentName}'s Choice</h3>
+                {opponentHasChosen ? (
+                   showTransition ? (
+                      // REVEAL their choice during the transition overlay!
+                      <img src={`/${opponentHasChosen}.svg`} alt={opponentHasChosen} style={{ height: '25vh', filter: 'drop-shadow(0 15px 15px rgba(0,0,0,0.6))', transform: 'scale(1.1)' }} />
+                   ) : (
+                      // Waiting for backend to resolve tie/win (Hidden lock)
+                      <div style={{ height: '25vh', width: '25vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '20px' }}><span style={{ fontSize: '4rem' }}>🔒</span></div>
+                   )
+                ) : (
+                   // Still waiting for them to pick
+                   <div style={{ height: '25vh', width: '25vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: '20px', border: '3px dashed rgba(255,255,255,0.5)' }}>
+                     <span style={{ color: 'white', fontSize: '2rem', animation: 'pulse 1.5s infinite' }}>...</span>
+                   </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Hide "Waiting..." text if the transition is running */}
+            {!showTransition && (
+              <h3 style={{ color: '#f39c12', fontSize: '2rem', marginTop: '6vh', textShadow: '2px 2px 4px rgba(0,0,0,0.8)', animation: 'pulse 1.5s infinite' }}>
+                Waiting for {opponentName} selection...
+              </h3>
+            )}
+          </div>
+        )}
+
+        {/* ======================= TRANSITION WINNER OVERLAY ======================= */}
+        {showTransition && (
+          <div style={{
+            position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 100
+          }}>
+            
+            {/* WOODEN BOARD */}
+            <div style={{
+              width: '500px', height: '160px', backgroundImage: 'url("/lobbywood.svg")', backgroundSize: '100% 100%',
+              backgroundPosition: 'center', backgroundRepeat: 'no-repeat', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 15px 15px rgba(0,0,0,0.6))',
+              marginBottom: '40px', paddingBottom: '10px'
+            }}>
+              <h1 style={{ color: 'white', fontSize: '3.5rem', margin: '0 0 5px 0', fontFamily: 'cursive, sans-serif', textShadow: '2px 3px 0 rgba(0,0,0,0.5)' }}>
+                {gameState.turn === 'p1' ? 'Bob' : 'Bin'} WINS!!
+              </h1>
+              <h3 style={{ color: 'white', fontSize: '1.5rem', margin: 0, fontFamily: 'cursive, sans-serif', textShadow: '1px 2px 0 rgba(0,0,0,0.5)' }}>
+                Gets to make a move first
+              </h3>
+            </div>
+
+            {/* POWERUP REWARD */}
+            {gameState[`${gameState.turn}_inventory`]?.length > 0 && (
+              <img 
+                src={gameState[`${gameState.turn}_inventory`][0] === 'bomb' ? '/bomb.svg' : '/boot.svg'} 
+                alt="Powerup Reward"
+                style={{ height: '150px', animation: 'pulse 1.5s infinite', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.6))' }}
+              />
+            )}
+
+            {/* COUNTDOWN */}
+            <h2 style={{ color: 'white', fontSize: '1.8rem', marginTop: '60px', fontFamily: 'cursive, sans-serif', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+              Entering game in {countdown}...
+            </h2>
+
+          </div>
+        )}
       </div>
-    ) : (
-      /*hide buttons if players have choosen*/
-      <div style={{ marginTop: '30px', textAlign: 'center' }}>
-        <h3>Your choice: {myChoice.toUpperCase()} </h3>
-        <p style={{ animation: 'pulse 1.5s infinite', marginTop: '10px', fontSize:'1.2rem' }}>
-          Waiting for opponent to choose...
-          </p>
-    </div>
-  )}
-  </div>
-  );
-}
+    );
+  }
 
 
 
