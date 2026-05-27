@@ -7,6 +7,9 @@ const socket = io(`http://${import.meta.env.VITE_SERVER_ID}:5000`);
 
 function App() {
   const [gameStarted, setGameStarted] = useState(false); // State to track if the game has started
+
+
+
 //gameState starts empty until Python sends the data
   const [gameState, setGameState] = useState(null);  
   const [myPlayerId, setMyPlayerId] = useState(null) 
@@ -131,6 +134,14 @@ function App() {
     setMyPlayerId(playerId);
     socket.emit('claim_player', playerId);
   }; 
+
+  const handleCancelWaiting = () => {
+    if (myPlayerId) {
+      socket.emit('unclaim_player', myPlayerId);
+    }
+    setMyPlayerId(null);
+    setGameStarted(false);
+  };
 
 //-----------------------------handle reset server button------------------------------
   const handleResetServer = () => {
@@ -265,221 +276,265 @@ function App() {
  
 
 // ===============================THE LOBBY SCREEN - CHOOSE YOUR PLAYER=================================================
-if (!myPlayerId) {
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      position: 'fixed',
-      inset: 0,
-      height: '100vh',
-      width: '100vw',
-      backgroundImage: 'url("/gamebg.png")',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      overflow: 'hidden',
-      paddingTop: '8vh' // Pushes content slightly down
-    }}>
-      
-      {/* --- BACK BUTTON --- */}
-      <img 
-        src="/backbtn.svg" 
-        alt="Back to Splash" 
-        onClick={() => setGameStarted(false)}
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          width: '60px', 
-          cursor: 'pointer',
-          transition: 'transform 0.2s',
-          filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.4))'
-        }}
-        onMouseOver={(e) => e.target.style.transform = 'scale(1.1)'}
-        onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
-      />
-
-      {/* --- TITLE --- */}
-      <h1 style={{
-        color: 'white',
-        fontSize: '4.5rem',
-        fontFamily: 'cursive, sans-serif', 
-        textShadow: '3px 3px 0px rgba(0,0,0,0.7), 0px 5px 15px rgba(0,0,0,0.5)',
-        margin: '0 0 5vh 0',
-        letterSpacing: '2px'
+  if (!myPlayerId) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        position: 'fixed',
+        inset: 0,
+        height: '100vh',
+        width: '100vw',
+        backgroundImage: 'url("/gamebg.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        overflow: 'hidden',
+        paddingTop: '8vh' // Pushes content slightly down
       }}>
-        Choose Player
-      </h1>
-
-      {/* --- CHARACTER SELECTORS --- */}
-      <div style={{ display: 'flex', gap: '8vw', alignItems: 'flex-end', justifyContent: 'center' }}>
         
-        {/* BOB (Player 1) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
-          <img 
-            src="/bob.svg" 
-            alt="Bob" 
-            onMouseEnter={() => setHoveredPlayer('p1')}
-            onMouseLeave={() => setHoveredPlayer(null)}
-            style={{ 
-              height: '45vh', 
-              // Grays out the character if taken
-              filter: gameState.p1_claimed ? 'grayscale(100%) brightness(50%)' : 'drop-shadow(0 15px 15px rgba(0,0,0,0.5))',
-              transition: 'filter 0.3s, transform 0.2s',
-              cursor: 'pointer',
-              transform: hoveredPlayer === 'p1' ? 'scale(1.05)' : 'scale(1)'
-            }} 
-          />
+        {/* --- BACK BUTTON --- */}
+        <img 
+          src="/backbtn.svg" 
+          alt="Back to Splash" 
+          onClick={() => setGameStarted(false)}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            width: '60px', 
+            cursor: 'pointer',
+            transition: 'transform 0.2s',
+            filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.4))'
+          }}
+          onMouseOver={(e) => e.target.style.transform = 'scale(1.1)'}
+          onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+        />
+  
+        {/* --- TITLE --- */}
+        <h1 style={{
+          color: 'white',
+          fontSize: '4.5rem',
+          fontFamily: 'cursive, sans-serif', 
+          textShadow: '3px 3px 0px rgba(0,0,0,0.7), 0px 5px 15px rgba(0,0,0,0.5)',
+          margin: '0 0 5vh 0',
+          letterSpacing: '2px'
+        }}>
+          Choose Player
+        </h1>
+  
+        {/* --- CHARACTER SELECTORS --- */}
+        <div style={{ display: 'flex', gap: '8vw', alignItems: 'flex-end', justifyContent: 'center' }}>
           
-          {/* BOB POPUP */}
-          {hoveredPlayer === 'p1' && (
-            <div style={{
-              position: 'center',
-              top: '-80px',
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-              color: '#ffa500',
-              padding: '12px 20px',
-              borderRadius: '8px',
-              fontSize: '1.1rem',
-              fontWeight: 'bold',
-              whiteSpace: 'nowrap',
-              border: '2px solid #ffa500',
-              boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
-              zIndex: 100,
-              animation: 'fadeIn 0.3s ease'
-            }}>
-              The Neighbor
-            </div>
-          )}
-          
-          <button
-            onClick={() => handleChoosePlayer('p1')}
-            disabled={gameState.p1_claimed}
-            style={{ 
-              backgroundColor: gameState.p1_claimed ? '#7f8c8d' : '#ffa500', // Orange matching your design
-              color: 'white', 
-              padding: '12px 60px', 
-              fontSize: '2rem',
-              fontWeight: 'bold',
-              fontFamily: 'cursive, sans-serif',
-              border: 'none', 
-              borderRadius: '15px', 
-              cursor: gameState.p1_claimed ? 'not-allowed' : 'pointer',
-              boxShadow: '0 8px 0px rgba(200, 100, 0, 1), 0 15px 20px rgba(0,0,0,0.4)', // 3D button effect
-              textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
-              transition: 'transform 0.1s, box-shadow 0.1s'
-            }}
-            onMouseDown={(e) => { 
-              if(!gameState.p1_claimed) {
-                e.target.style.transform = 'translateY(8px)';
-                e.target.style.boxShadow = '0 0px 0px rgba(200, 100, 0, 1), 0 5px 10px rgba(0,0,0,0.4)';
-              }
-            }}
-            onMouseUp={(e) => { 
-              if(!gameState.p1_claimed) {
-                e.target.style.transform = 'translateY(0px)';
-                e.target.style.boxShadow = '0 8px 0px rgba(200, 100, 0, 1), 0 15px 20px rgba(0,0,0,0.4)';
-              }
-            }}
-          >
-            {gameState.p1_claimed ? 'Taken' : 'Bob'}
-          </button>
+          {/* BOB (Player 1) */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
+            <img 
+              src="/bob.svg" 
+              alt="Bob" 
+              style={{ 
+                height: '45vh', 
+                filter: gameState.p1_claimed ? 'grayscale(100%) brightness(50%)' : 'drop-shadow(0 15px 15px rgba(0,0,0,0.5))',
+                transition: 'filter 0.3s, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                transformOrigin: 'bottom center',
+                transform: hoveredPlayer === 'p1' ? 'scale(1.08) translateY(-15px)' : 'scale(1) translateY(0)'
+              }} 
+            />
+            
+            <button
+              onClick={() => handleChoosePlayer('p1')}
+              disabled={gameState.p1_claimed}
+              style={{ 
+                backgroundColor: gameState.p1_claimed ? '#7f8c8d' : '#ffa500', 
+                color: 'white', 
+                padding: '12px 60px', 
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                fontFamily: 'cursive, sans-serif',
+                border: 'none', 
+                borderRadius: '15px', 
+                cursor: gameState.p1_claimed ? 'not-allowed' : 'pointer',
+                boxShadow: '0 8px 0px rgba(200, 100, 0, 1), 0 15px 20px rgba(0,0,0,0.4)', 
+                textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
+                transition: 'transform 0.1s, box-shadow 0.1s'
+              }}
+              onMouseEnter={() => {
+                if(!gameState.p1_claimed) setHoveredPlayer('p1');
+              }}
+              onMouseLeave={() => {
+                if(!gameState.p1_claimed) setHoveredPlayer(null);
+              }}
+              onMouseDown={(e) => { 
+                if(!gameState.p1_claimed) {
+                  e.target.style.boxShadow = '0 0px 0px rgba(200, 100, 0, 1), 0 5px 10px rgba(0,0,0,0.4)';
+                }
+              }}
+              onMouseUp={(e) => { 
+                if(!gameState.p1_claimed) {
+                  e.target.style.transform = 'translateY(0px)';
+                  e.target.style.boxShadow = '0 8px 0px rgba(200, 100, 0, 1), 0 15px 20px rgba(0,0,0,0.4)';
+                }
+              }}
+            >
+              {gameState.p1_claimed ? 'Taken' : 'Bob'}
+            </button>
+          </div>
+  
+          {/* BIN (Player 2) */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
+            <img 
+              src="/bin.svg" 
+              alt="Bin" 
+              style={{ 
+                height: '45vh', 
+                filter: gameState.p2_claimed ? 'grayscale(100%) brightness(50%)' : 'drop-shadow(0 15px 15px rgba(0,0,0,0.5))',
+                transition: 'filter 0.3s, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                transformOrigin: 'bottom center',
+                transform: hoveredPlayer === 'p2' ? 'scale(1.08) translateY(-15px)' : 'scale(1) translateY(0)'
+              }} 
+            />
+            
+            <button
+              onClick={() => handleChoosePlayer('p2')}
+              disabled={gameState.p2_claimed}
+              style={{ 
+                backgroundColor: gameState.p2_claimed ? '#7f8c8d' : '#00e640', 
+                color: 'white', 
+                padding: '12px 60px', 
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                fontFamily: 'cursive, sans-serif',
+                border: 'none', 
+                borderRadius: '15px', 
+                cursor: gameState.p2_claimed ? 'not-allowed' : 'pointer',
+                boxShadow: '0 8px 0px rgba(0, 150, 40, 1), 0 15px 20px rgba(0,0,0,0.4)', 
+                textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
+                transition: 'transform 0.1s, box-shadow 0.1s'
+              }}
+              onMouseEnter={() => {
+                if(!gameState.p2_claimed) setHoveredPlayer('p2');
+              }}
+              onMouseLeave={() => {
+                if(!gameState.p2_claimed) setHoveredPlayer(null);
+              }}
+              onMouseDown={(e) => { 
+                if(!gameState.p2_claimed) {
+                  e.target.style.boxShadow = '0 0px 0px rgba(0, 150, 40, 1), 0 5px 10px rgba(0,0,0,0.4)';
+                }
+              }}
+              onMouseUp={(e) => { 
+                if(!gameState.p2_claimed) {
+                  e.target.style.transform = 'translateY(0px)';
+                  e.target.style.boxShadow = '0 8px 0px rgba(0, 150, 40, 1), 0 15px 20px rgba(0,0,0,0.4)';
+                }
+              }}
+            >
+              {gameState.p2_claimed ? 'Taken' : 'Bin'}
+            </button>
+          </div>
+  
         </div>
-
-        {/* BIN (Player 2) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', position: 'relative' }}>
-          <img 
-            src="/bin.svg" 
-            alt="Bin" 
-            onMouseEnter={() => setHoveredPlayer('p2')}
-            onMouseLeave={() => setHoveredPlayer(null)}
-            style={{ 
-              height: '45vh', 
-              filter: gameState.p2_claimed ? 'grayscale(100%) brightness(50%)' : 'drop-shadow(0 15px 15px rgba(0,0,0,0.5))',
-              transition: 'filter 0.3s, transform 0.2s',
-              cursor: 'pointer',
-              transform: hoveredPlayer === 'p2' ? 'scale(1.05)' : 'scale(1)'
-            }} 
-          />
-          
-          {/* BIN POPUP */}
-          {hoveredPlayer === 'p2' && (
-            <div style={{
-              position: 'center',
-              top: '-80px',
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-              color: '#00e640',
-              padding: '12px 20px',
-              borderRadius: '8px',
-              fontSize: '1.1rem',
-              fontWeight: 'bold',
-              whiteSpace: 'nowrap',
-              border: '2px solid #00e640',
-              boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
-              zIndex: 100,
-              animation: 'fadeIn 0.3s ease'
-            }}>
-              The Spy
-            </div>
-          )}
-          
-          <button
-            onClick={() => handleChoosePlayer('p2')}
-            disabled={gameState.p2_claimed}
-            style={{ 
-              backgroundColor: gameState.p2_claimed ? '#7f8c8d' : '#00e640', // Bright green matching your design
-              color: 'white', 
-              padding: '12px 60px', 
-              fontSize: '2rem',
-              fontWeight: 'bold',
-              fontFamily: 'cursive, sans-serif',
-              border: 'none', 
-              borderRadius: '15px', 
-              cursor: gameState.p2_claimed ? 'not-allowed' : 'pointer',
-              boxShadow: '0 8px 0px rgba(0, 150, 40, 1), 0 15px 20px rgba(0,0,0,0.4)', // 3D button effect
-              textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
-              transition: 'transform 0.1s, box-shadow 0.1s'
-            }}
-            onMouseDown={(e) => { 
-              if(!gameState.p2_claimed) {
-                e.target.style.transform = 'translateY(8px)';
-                e.target.style.boxShadow = '0 0px 0px rgba(0, 150, 40, 1), 0 5px 10px rgba(0,0,0,0.4)';
-              }
-            }}
-            onMouseUp={(e) => { 
-              if(!gameState.p2_claimed) {
-                e.target.style.transform = 'translateY(0px)';
-                e.target.style.boxShadow = '0 8px 0px rgba(0, 150, 40, 1), 0 15px 20px rgba(0,0,0,0.4)';
-              }
-            }}
-          >
-            {gameState.p2_claimed ? 'Taken' : 'Bin'}
-          </button>
-        </div>
-
       </div>
-    </div>
-  );
-}
+    );
+  }
 
 //=========================WAITING ROOM - WAIT FOR OTHER PLAYER TO JOIN===========================================
 if (gameState.status === 'waiting_for_players') {
   return(
-    <div className="waiting-room">
-      <h1 style={{ fontSize: '3rem', marginBottom: '20px', textAlign: 'center'}}>Nosy Neighbor</h1>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      width: '100vw',
+      height: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.72)), url("/gamebg.png")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      gap: '28px'
+    }}>
       <div style={{
-        padding: '20px',
-        backgroundColor: '#f0f0f0',
-        borderRadius: '10px',
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-        maxWidth: '400px',
-        border: `4px solid ${myPlayerId === 'p1' ? '#3498db' : '#e74c3c'}`}}> 
-        <h2>You are {myPlayerId}</h2>
-      <h3 style={{marginTop: '20px', animation: 'pulse 1.5s infinite'}}>Waiting for other player to join...</h3>
-  </div>
-  </div>
+        width: '360px',
+        height: '138px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundImage: 'url("/lobbywood.svg")',
+        backgroundSize: '100% 100%',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        filter: 'drop-shadow(0 12px 14px rgba(0,0,0,0.55))'
+      }}>
+        <h1 style={{
+          margin: 0,
+          color: 'white',
+          fontSize: '2.3rem',
+          fontFamily: 'cursive, sans-serif',
+          fontWeight: 'bold',
+          textShadow: '2px 3px 0 rgba(0,0,0,0.45)',
+          letterSpacing: '1px'
+        }}>
+          LOBBY
+        </h1>
+      </div>
+
+      <h2 style={{
+        margin: 0,
+        color: 'white',
+        fontSize: '1.8rem',
+        fontFamily: 'cursive, sans-serif',
+        textShadow: '2px 3px 5px rgba(0,0,0,0.85)',
+        animation: 'pulse 1.5s infinite'
+      }}>
+        Waiting for {myPlayerId === 'p1' ? 'Bin' : 'Bob'}...
+      </h2>
+
+      <button
+        onClick={handleCancelWaiting}
+        style={{
+          width: '190px',
+          height: '72px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1,
+          padding: 0,
+          border: 'none',
+          backgroundColor: 'transparent',
+          backgroundImage: 'url("/yellowbtn.svg")',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          color: 'white',
+          cursor: 'pointer',
+          fontSize: '1.25rem',
+          fontWeight: 'bold',
+          fontFamily: 'cursive, sans-serif',
+          textShadow: '2px 2px 3px rgba(0,0,0,0.45)',
+          filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.5))',
+          transition: 'transform 0.14s ease, filter 0.14s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.transform = 'translateY(-3px) scale(1.04)';
+          e.target.style.filter = 'drop-shadow(0 14px 13px rgba(0,0,0,0.55))';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'translateY(0) scale(1)';
+          e.target.style.filter = 'drop-shadow(0 10px 10px rgba(0,0,0,0.5))';
+        }}
+        onMouseDown={(e) => {
+          e.target.style.transform = 'translateY(2px) scale(0.97)';
+        }}
+        onMouseUp={(e) => {
+          e.target.style.transform = 'translateY(-3px) scale(1.04)';
+        }}
+      >
+        CANCEL
+      </button>
+    </div>
   );
 }
 

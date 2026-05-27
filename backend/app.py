@@ -129,6 +129,19 @@ def handle_claim(player_id):
     r.set('game_state', json.dumps(state))
     emit('game_update', state, broadcast=True)    
 
+@socketio.on('unclaim_player')
+def handle_unclaim(player_id):
+    state = json.loads(r.get('game_state'))
+
+    if state["status"] == "waiting_for_players":
+        if player_id == "p1":
+            state["p1_claimed"] = False
+        elif player_id == "p2":
+            state["p2_claimed"] = False
+
+        r.set('game_state', json.dumps(state))
+        emit('game_update', state, broadcast=True)
+
 #==============================RPS Logic===========================
 
 @socketio.on('play_rps')
