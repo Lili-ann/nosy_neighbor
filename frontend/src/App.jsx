@@ -5,8 +5,6 @@ import './App.css';
 //connection to backend - flask
 const socket = io(`http://${import.meta.env.VITE_SERVER_ID}:5000`);
 
-
-
 function App() {
   const [gameStarted, setGameStarted] = useState(false); // State to track if the game has started
 
@@ -25,17 +23,18 @@ function App() {
   const [hoveredPlayer, setHoveredPlayer] = useState(null); // State to track which player image is hovered
 
   useEffect(() => {
-    // Listen for new audit logs from the backend
-
+// Listen for new audit logs from the backend
     socket.on('new_audit_log', (log) => {
       setAuditLogs((prevLogs) => [...prevLogs, log]);
     });
 
+// Clear logs when backend signals to clear (e.g., on rematch)
     socket.on('clear_audit_logs', () => {
-      setAuditLogs([]); // Clear logs when backend signals to clear (e.g., on rematch)
-      setRematchRequested(null); // Reset rematch request state when starting a new game
+      setAuditLogs([]); 
+      setRematchRequested(null); 
     });
 
+// Reset rematch request state when starting a new game
     socket.on('rematch_requested', (data) => {
       setRematchRequested(data.by_player);
     });
@@ -43,7 +42,6 @@ function App() {
     socket.on('kick_to_lobby', () => {
       setMyPlayerId(null);
     });
-
 
     return () => {
       socket.off('new_audit_log');
@@ -83,21 +81,18 @@ function App() {
     return () => clearTimeout(timer);
   }, [showTransition, countdown]);
 
-
-
   
   //-----------------------handling movement logic---------------------------
   const handleMove = (direction) => {
-    //send message only if its actuall the players turn
+    //send message only if its the players turn
     if (gameState.turn === myPlayerId) {
       socket.emit('move_player', { player: myPlayerId, direction: direction });
     }
-  };
+  }
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!gameState || gameState.turn !== myPlayerId) return;
-
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault(); //prevent default scrolling behavior
       }
@@ -120,7 +115,6 @@ function App() {
       // tell browers to listen for key pressed
     window.addEventListener('keydown', handleKeyDown);
     
-    //cleanup function to stop listening when game ends.
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
@@ -129,7 +123,6 @@ function App() {
   //creating grid for board
   const gridSize =11;
   const totalcells = gridSize * gridSize;
-
 
   useEffect(() => {
     const handleConnect = () => {
@@ -140,7 +133,6 @@ function App() {
    const handleGameUpdate = (newState) => {
     setGameState(newState);
    };
-
    socket.on('connect', handleConnect);
 
    //backend sends the board to react
@@ -150,14 +142,15 @@ function App() {
     handleConnect();
    }
 
-   ////cleanup function to to remove listeners when you close the tab
+   //cleanup function
    return () => {
     socket.off('connect', handleConnect);
     socket.off('game_update', handleGameUpdate);
     };
-  }, []); //empty brackets mean "only run this setup ONE time when the page loads"
+  }, []); 
 
 //-------------------------------------------------------------------------------------------------------
+
   //when a player is selected, ID gets locked and sent to backend to claim it.
   const handleChoosePlayer = (playerId) => {
     setMyPlayerId(playerId);
@@ -196,8 +189,8 @@ function App() {
         
         // THE MAGIC FULLSCREEN SETTINGS:
         backgroundImage: 'url("/homepg.png")',
-        backgroundSize: 'cover',       // Stretches/shrinks image to fill space without distortion
-        backgroundPosition: 'center',  // Keeps the most important part of the image centered
+        backgroundSize: 'cover',       
+        backgroundPosition: 'center',  
         backgroundRepeat: 'no-repeat',
         boxShadow: 'inset 0 0 50px rgba(30, 80, 0, 100)',
         
@@ -236,9 +229,7 @@ function App() {
           }}
           onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
           onMouseUp={(e) => e.target.style.transform = 'translateY(-6px) scale(1.06)'}
-        >
-          Play
-        </button>
+        >Play </button>
 
         <button
           onClick={handleResetServer}
@@ -268,31 +259,23 @@ function App() {
           }}
           onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
           onMouseUp={(e) => e.target.style.transform = 'translateY(-6px) scale(1.06)'}
-        >
-          New Game
-        </button>
+        > New Game </button>
       </div>
     );
   }
   // ===============================================================================================
 
-
   if (!gameState)
     return <div className="lobby-container">
       <h2>Loading game...</h2></div>;
-    
   
 //-----------------------------handle the RPS choice ------------------------------
-// The backend will then determine the winner and update the game state accordingly.
   const handleRpsChoice = (choice) => {
     socket.emit('play_rps', { player: myPlayerId, choice: choice });
   };
 
-
-
 // ----------------------------------handle powerup usage------------------------------
   const handleUsePowerup = (item) => {
-
     if (gameState.turn === myPlayerId) {
       socket.emit('use_powerup', { player: myPlayerId, item: item });
     }
@@ -303,7 +286,6 @@ function App() {
     socket.emit('play_again', { player: myPlayerId });
   };
  
-
 // ===============================THE LOBBY SCREEN - CHOOSE YOUR PLAYER=================================================
   if (!myPlayerId) {
     return (
@@ -505,9 +487,7 @@ if (gameState.status === 'waiting_for_players') {
           fontWeight: 'bold',
           textShadow: '2px 3px 0 rgba(0,0,0,0.45)',
           letterSpacing: '1px'
-        }}>
-          LOBBY
-        </h1>
+        }}> LOBBY </h1>
       </div>
 
       <h2 style={{
@@ -517,9 +497,7 @@ if (gameState.status === 'waiting_for_players') {
         fontFamily: 'cursive, sans-serif',
         textShadow: '2px 3px 5px rgba(0,0,0,0.85)',
         animation: 'pulse 1.5s infinite'
-      }}>
-        Waiting for {myPlayerId === 'p1' ? 'Bin' : 'Bob'}...
-      </h2>
+      }}>  Waiting for {myPlayerId === 'p1' ? 'Bin' : 'Bob'} ... </h2>
 
       <button
         onClick={handleCancelWaiting}
@@ -560,9 +538,7 @@ if (gameState.status === 'waiting_for_players') {
         onMouseUp={(e) => {
           e.target.style.transform = 'translateY(-3px) scale(1.04)';
         }}
-      >
-        CANCEL
-      </button>
+      > CANCEL </button>
     </div>
   );
 }
@@ -617,7 +593,6 @@ if (gameState.status === 'waiting_for_players') {
                 <h3 style={{ color: 'white', marginBottom: '20px' }}>{opponentName}'s Choice</h3>
                 {opponentHasChosen ? (
                    showTransition ? (
-                      // REVEAL their choice during the transition overlay!
                       <img src={`/${opponentHasChosen}.svg`} alt={opponentHasChosen} style={{ height: '25vh', filter: 'drop-shadow(0 15px 15px rgba(0,0,0,0.6))', transform: 'scale(1.1)' }} />
                    ) : (
                       // Waiting for backend to resolve tie/win (Hidden lock)
@@ -683,10 +658,7 @@ if (gameState.status === 'waiting_for_players') {
     );
   }
 
-
-
 // ===============================THE GAME BOARD SCREEN===============================================
-
 const getIconSrc = (item) => {
   if (item === "wall") return "/wall.svg";
   if (item === "medkit") return "/medkit.svg";
@@ -715,11 +687,9 @@ const renderGameIcon = (item, size = 30) => {
   );
 };
 
-
  const cells =[];
  // this will loop 121 times to create the grid cells.
   for (let i = 0; i < totalcells; i++) {
-    //to calculte the x and y coordinates of each cell based on its index
     const x = i % gridSize;
     const y = Math.floor(i / gridSize);
 
@@ -763,7 +733,6 @@ const renderGameIcon = (item, size = 30) => {
       cellContent = renderGameIcon("medkit", 30);
     }
     else {
-      // 2. If it's not the player, check if it's a Trail!
       const isP1Trail = gameState.p1_trail.some(spot => spot.x === x && spot.y === y);
       const isP2Trail = gameState.p2_trail.some(spot => spot.x === x && spot.y === y);
 
@@ -784,41 +753,41 @@ const renderGameIcon = (item, size = 30) => {
 
 const canMove = gameState.turn === myPlayerId;
 const moveButtonStyle = (rotation, extraStyles = {}) => ({
-  width: 'clamp(22px, 7vw, 100px)',
-  height: 'clamp(22px, 7vw, 100px)',
+  width: 'clamp(45px, 7vw, 100px)',   // Adjusted minimum size so it doesn't get too tiny
+  height: 'clamp(45px, 7vw, 100px)',
   padding: 0,
   border: 'none',
   backgroundColor: 'transparent',
   backgroundImage: 'url("/movebtn.svg")',
-  backgroundSize: '100% 100%',
+  backgroundSize: '100% 100%',        // Fixed sizing
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
   cursor: canMove ? 'pointer' : 'not-allowed',
   filter: canMove ? 'drop-shadow(0 8px 8px rgba(0,0,0,0.45))' : 'grayscale(100%) brightness(55%)',
-  transform: `rotate(${rotation}deg)`,
+  transform: `rotate(${rotation}deg)`, // Only ONE transform needed
   transition: 'filter 0.12s ease, transform 0.12s ease',
   ...extraStyles
 });
 
 const auditLogBoxStyle = {
-  width: 'clamp(420px, 60vw, 390px)',
-  height: 'clamp(320px, 90vh, 500px)',
+  width: '100%',
+  height: '80%',
   backgroundColor: 'transparent',
   backgroundImage: 'url("/logbox.svg")',
-  backgroundSize: '100% 100%',
+  backgroundSize: '90% 80%',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',
-  padding: 'clamp(38px, 9vh, 8px) clamp(24px, 3vw, 42px) clamp(30px, 4vh, 46px)',
+  padding: 'clamp(10px, 3vh, 98px) clamp(24px, 3vw, 42px) clamp(30px, 4vh, 46px)',
   filter: 'drop-shadow(0 12px 16px rgba(76, 41, 7, 0.84))',
   boxSizing: 'border-box',
 };
 
 const auditLogHeaderStyle = {
   color: '#310404',
-  padding: 'clamp(20px, 2vh, 70px) clamp(20px, 5vw, 100px)',
+  padding: 'clamp(20px, 2vh, 70px) clamp(20px, 8vw, 100px)',
   fontSize: 'clamp(10px, 1vw, 15px)',
   fontFamily: 'cursive, sans-serif',
   letterSpacing: '1px',
@@ -831,7 +800,7 @@ const auditLogHeaderStyle = {
 const auditLogContentStyle = {
   flex: 1,
   overflowY: 'auto',
-padding: 'clamp(5px, 1vh, 150px) clamp(20px, 5vw, 100px)',
+  padding: 'clamp(10px, 1vh, 100px) clamp(10px, 8vw, 130px)',
   fontSize: 'clamp(11px, 1.0vw, 18px)',
   fontWeight: 'bold',
   fontFamily: 'sans-serif',
@@ -855,8 +824,8 @@ const auditLogEntryStyle = {
 };
 
 const powerupDrawerStyle = {
-  width: 'clamp(145px, 18vw, 230px)',
-  height: 'clamp(205px, 34vh, 330px)',
+  width: 'clamp(10px, 40vw, 250px)',
+  height: 'clamp(10px, 50vh, 300px)',
   backgroundColor: 'transparent',
   backgroundImage: 'url("/logbox.svg")',
   backgroundSize: '100% 100%',
@@ -870,8 +839,8 @@ const powerupDrawerStyle = {
 const powerupDrawerTitleStyle = {
   color: '#310404',
   textAlign: 'center',
-  margin: '0 0 clamp(16px, 4vh, 80px)',
-  fontSize: 'clamp(1rem, 1.3vw, 1.25rem)',
+  margin: '0 0 clamp(16px, 4vh, 100px)',
+  fontSize: 'clamp(0rem, 1vw, 5rem)',
   fontFamily: 'cursive, sans-serif',
   fontWeight: 'bold',
   textShadow: '1px 1px 1px rgba(255,255,255,0.35)'
@@ -909,7 +878,6 @@ const renderHpBar = (playerName, hp, barSrc) => (
       gap: 'clamp(7px, 2vw, 16px)',
       marginTop: 'clamp(-5px, -2vh, 100px)'
 
-    
 
     }}>
       {Array.from({ length: 3 }).map((_, index) => (
@@ -963,30 +931,31 @@ const renderHpBar = (playerName, hp, barSrc) => (
           {renderHpBar('Bob', gameState.p1.hp, '/hpbaryellow.svg')}
         </div>
 
-        {/* Center: Turn Counter / Timer */}
+      {/* Center: Turn Counter / Timer */}
         <div style={{
+          position: 'absolute',     
+          left: '50%',              
+          transform: 'translateX(-50%)', 
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           fontFamily: 'cursive, sans-serif',
-
        }}>
-          <span style={{ color: 'white', fontWeight: 'bold', fontSize: 'clamp(0rem, 1.5vw, 8rem)', textShadow: '1px 1px 3px black', letterSpacing: '2px', marginBottom: 'clamp(0px, -2vh, 100px)', marginLeft: 'clamp(-170px, -25vh, 100px)' }}>
+          <span style={{ color: 'white', fontWeight: 'bold', fontSize: 'clamp(1rem, 1.5vw, 2rem)', textShadow: '1px 1px 3px black', letterSpacing: '2px', marginBottom: '5px' }}>
             TURNS
           </span>
           <div style={{
-            width: 'clamp(20px, 10vw, 500px)',
-            height: 'clamp(25px, 5vw, 105px)',
+            width: 'clamp(150px, 16vw, 300px)',
+            height: 'clamp(50px, 6vw, 90px)',
             backgroundImage: 'url("/lobbywood.svg")',
             backgroundSize: '100% 100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            fontSize: 'clamp(1rem, 1.5vw, 2rem)',
+            fontSize: 'clamp(1.2rem, 1.5vw, 2rem)',
             fontWeight: 'bold',
-            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))',
-            marginLeft: 'clamp(-170px, -25vh, 100px)'
+            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))'
           }}>
             {gameState.p1_moves_remaining} : {gameState.p2_moves_remaining}
           </div>
@@ -996,9 +965,7 @@ const renderHpBar = (playerName, hp, barSrc) => (
         <div style={{ transform: 'scale(0.8)', transformOrigin: 'top right' }}>
           {renderHpBar('Bin', gameState.p2.hp, '/hpbargreen.svg')}
         </div>
-
       </div>
-
 
       {/* ------------------------ MAIN GAME AREA ------------------------- */}
       <div style={{
@@ -1012,12 +979,13 @@ const renderHpBar = (playerName, hp, barSrc) => (
         alignItems: 'center'
       }}>
 
-        {/* ================= LEFT COLUMN ================= */}
+        {/* ================================================== LEFT COLUMN =============================================== */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '80%' }}>
           
           {/* Active Player's Drawer */}
           <div style={{ ...powerupDrawerStyle, position: 'relative', top: 'clamp(0px, 10vh, 20px)', left: 'auto', margin: 25 }}>
             <h3 style={powerupDrawerTitleStyle}>Your Drawer</h3>
+
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
               {/* Dynamically loads whichever inventory belongs to the device player */}
               {gameState[`${myPlayerId}_inventory`]?.map((item, index) => (
@@ -1039,7 +1007,7 @@ const renderHpBar = (playerName, hp, barSrc) => (
             <button 
               onClick={handleResetServer} 
               aria-label="Reset game"
-              style={{ width: 'clamp(46px, vw, 70px)', height: 'clamp(46px, 5vw, 70px)', backgroundColor: 'transparent', backgroundImage: 'url("/restartbtn.svg")', backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', border: 'none', cursor: 'pointer', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }}
+              style={{ width: 'clamp(10px,7vw, 70px)', height: 'clamp(46px, 5vw, 70px)', backgroundColor: 'transparent', backgroundImage: 'url("/restartbtn.svg")', backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', border: 'none', cursor: 'pointer', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }}
             />
             
             {/* Home / Splash Screen Button */}
@@ -1052,7 +1020,7 @@ const renderHpBar = (playerName, hp, barSrc) => (
         </div>
 
 
-        {/* ================= CENTER COLUMN (BOARD) ================= */}
+        {/* ==================================================== CENTER COLUMN (BOARD) ========================================================================================= */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
           
           {/* Game Over Popup Overlay */}
@@ -1078,14 +1046,13 @@ const renderHpBar = (playerName, hp, barSrc) => (
           </div>
         </div>
 
-
-        {/* ================= RIGHT COLUMN ================= */}
+        {/* ========================================================== RIGHT COLUMN ===================================================== */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', height: '100%' }}>
           
           {/* Audit Log Box */}
-          <div style={{ ...auditLogBoxStyle, position: 'relative', top: '11px', left: 'auto', margin: '10px' }}>
+          <div style={{ ...auditLogBoxStyle, position: 'relative', top: '11px', right: '30px', margin: 'auto' }}>
               <div style={auditLogHeaderStyle}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#1e1500' }}></div>
+                  <div style={{ width: '8px', height: 'px', borderRadius: '50%', backgroundColor: '#1e1500' }}></div>
                   LIVE AUDIT LOG
               </div>
               <div className="audit-log-scroll" style={auditLogContentStyle}>
@@ -1094,9 +1061,9 @@ const renderHpBar = (playerName, hp, barSrc) => (
                   ) : (
                       auditLogs.map((log, index) => (
                           <div key={index} style={auditLogEntryStyle}>
-                              <span style={{ color: '#ff9090', fontWeight: 'bold' }}>[{log.player.toUpperCase()}]</span> 
+                              <span style={{ color: '#fa9d9d', fontWeight: 'bold' }}>[{log.player.toUpperCase()}]</span> 
                               <span style={{ color: '#00d218', marginLeft: '6px' }}>{log.action}</span>
-                              <div style={{ color: '#1e1500', marginTop: '3px' }}>{log.details}</div>
+                              <div style={{ color: '#1e1500', marginTop: '1px' }}>{log.details}</div>
                           </div>
                       ))
                   )}

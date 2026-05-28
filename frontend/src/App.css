@@ -21,8 +21,8 @@
 /* The 11x11 Grid */
 .board {
   display: grid;
-  grid-template-columns: repeat(11, clamp(22px, 3.0vw, 70px));
-  grid-template-rows: repeat(11, clamp(22px, 3.0vw, 70px));
+  grid-template-columns: repeat(11, clamp(22px, 2.5vw, 70px));
+  grid-template-rows: repeat(11, clamp(22px, 2.5vw, 70px));
   gap: 2px;
   background-color: #000000;
   padding: 5px;
@@ -71,51 +71,51 @@
 
 /* Player and Path Colors */
 .cell-p1 {
-  background-color: #3498db; /* Blue for Player 1 */
+  background-color: #fdf50f; /* Blue for Player 1 */
 }
 
 .cell-p2 {
-  background-color: #e74c3c; /* Red for Player 2 */
+  background-color: #78e73c; /* Red for Player 2 */
 }
 
 .cell-path-p1 {
-  background-color: #85c1e9; /* Light blue for P1's trail */
+  background-color: #5df54c; /* Light blue for P1's trail */
 }
 
 .cell-path-p2 {
-  background-color: #f1948a; /* Light red for P2's trail */
+  background-color: #f1e28a; /* Light red for P2's trail */
 }
 
 /* The active players */
 .cell-p1 {
-  background-color: #3498db; /* Solid Blue */
+  background-color: #e6ce13; /* Solid Blue */
   color: white;
   font-weight: bold;
 }
 
 .cell-p2 {
-  background-color: #e74c3c; /* Solid Red */
+  background-color: #519d05; /* Solid Red */
   color: white;
   font-weight: bold;
 }
 
 /* NEW: The trails they leave behind */
 .cell-trail-p1 {
-  background-color: #85c1e9; /* Faded Light Blue */
+  background-color: #f7f13d; /* Faded Light Blue */
 }
 
 .cell-trail-p2 {
-  background-color: #f1948a; /* Faded Light Red */
+  background-color: #c1f35d; /* Faded Light Red */
 }
 
 /* The Bases / Goals */
 .cell-base-p1 {
-  background-color: #2980b9; /* Darker Blue */
+  background-color: #ffd901; /* Darker Blue */
   box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
 
 .cell-base-p2 {
-  background-color: #c0392b; /* Darker Red */
+  background-color: #57ac08; /* Darker Red */
   box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
 
