@@ -3,7 +3,8 @@ import { io } from 'socket.io-client';
 import './App.css';
 
 //connection to backend - flask
-const socket = io(`http://${import.meta.env.VITE_SERVER_ID}:5000`);
+const serverIp = window.location.hostname;
+const socket = io(`http://${serverIp}:5000`);
 
 function App() {
   const [gameStarted, setGameStarted] = useState(false); // State to track if the game has started
