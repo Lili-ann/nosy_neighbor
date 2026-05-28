@@ -69,6 +69,10 @@ DEFAULT_GAME_STATE ={
     "p1": {"x":5, "y":10, "hp": 3}, #player 1 starts at the bottom middle of the grid, with 6 hp
     "p2": {"x":5, "y":0, "hp": 3},  #player 2 starts at the top middle of the grid, with 6 hp
     
+    #move limit tracking - each player gets 20 moves
+    "p1_moves_remaining": 20,
+    "p2_moves_remaining": 20,
+    
     'p1_wants_rematch': False,
     'p2_wants_rematch': False
 }
@@ -218,6 +222,16 @@ def handle_move(data):
     if state["status"] != "playing" or state["turn"] != player:
         return
     
+    #check if player has moves remaining
+    if state[f"{player}_moves_remaining"] <= 0:
+        opponent = "p2" if player == "p1" else "p1"
+        state["status"] = "game_over"
+        state["winner"] = opponent
+        print(f"{player} is out of moves! {opponent} wins!", flush=True)
+        r.set('game_state', json.dumps(state))
+        emit('game_update', state, broadcast=True)
+        return
+    
     log_data = {"player": player, "action": "move", "details": direction}
     publish_event(log_data)
         
@@ -281,6 +295,9 @@ def handle_move(data):
         #if move is safe, player move to new position.
         state[player]["x"] = new_x
         state[player]["y"] = new_y
+        
+        #decrement move counter after successful move
+        state[f"{player}_moves_remaining"] -= 1
         
     # ------------------------------check for powerup pickups-----------------------------
         #check if player stepped on a medkit
@@ -422,6 +439,10 @@ def handle_play_again(data):
             #reset position and HP
             state['p1'] = {"x":5, "y":10, "hp": 3}
             state['p2'] = {"x":5, "y":0, "hp": 3}
+            
+            #reset move counters
+            state['p1_moves_remaining'] = 20
+            state['p2_moves_remaining'] = 20
             
             state['p1_wants_rematch'] = False
             state['p2_wants_rematch'] = False

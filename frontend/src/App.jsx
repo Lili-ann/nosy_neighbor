@@ -666,7 +666,7 @@ if (gameState.status === 'waiting_for_players') {
             {/* POWERUP REWARD */}
             {gameState[`${gameState.turn}_inventory`]?.length > 0 && (
               <img 
-                src={gameState[`${gameState.turn}_inventory`][0] === 'bomb' ? '/bomb.svg' : '/boot.svg'} 
+                src={gameState[`${gameState.turn}_inventory`][0] === 'bomb' ? '/bomb.svg' : '/boots.svg'} 
                 alt="Powerup Reward"
                 style={{ height: '150px', animation: 'pulse 1.5s infinite', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.6))' }}
               />
@@ -687,11 +687,32 @@ if (gameState.status === 'waiting_for_players') {
 
 // ===============================THE GAME BOARD SCREEN===============================================
 
-const getItemEmoji = (item) => {
-  if (item === "bomb") return "💣";
-  if (item === "boots") return "👢";
-  if (item === "medkit") return "💊";
-  return item;
+const getIconSrc = (item) => {
+  if (item === "wall") return "/wall.svg";
+  if (item === "medkit") return "/medkit.svg";
+  if (item === "bomb") return "/bomb.svg";
+  if (item === "boots") return "/boots.svg";
+  return null;
+};
+
+const renderGameIcon = (item, size = 30) => {
+  const src = getIconSrc(item);
+
+  if (!src) return item;
+
+  return (
+    <img
+      src={src}
+      alt={item}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        objectFit: 'contain',
+        display: 'block',
+        filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.35))'
+      }}
+    />
+  );
 };
 
 
@@ -703,7 +724,7 @@ const getItemEmoji = (item) => {
     const y = Math.floor(i / gridSize);
 
     let cellClass = "grid-cell"; //default class for all cells
-    let cellText = ""; //default text for all cells
+    let cellContent = ""; //default content for all cells
   
 
   //check if backend has given the board data.
@@ -720,26 +741,26 @@ const getItemEmoji = (item) => {
    // 1. Check if the cell is the actual Player
     if (gameState.p1.x === x && gameState.p1.y === y) {
       cellClass = "grid-cell cell-p1"; 
-      cellText = "P1";
+      cellContent = "P1";
     } else if (gameState.p2.x === x && gameState.p2.y === y) {
       cellClass = "grid-cell cell-p2"; 
-      cellText = "P2";
+      cellContent = "P2";
     } else if (isP1Base) {
       //player 1 base
       cellClass = "grid-cell cell-base-p1";
-      cellText = "🚩";
+      cellContent = "🚩";
     } else if (isP2Base) {
       //player 2 base
       cellClass = "grid-cell cell-base-p2";
-      cellText = "🚩";
+      cellContent = "🚩";
     } else if (isWall) {
       //wall
       cellClass = "grid-cell cell-wall";
-      cellText = "🧱";
+      cellContent = renderGameIcon("wall", 32);
     } else if (isMedkit) {
       //medkit
       cellClass = "grid-cell cell-medkit";
-      cellText = "💊";
+      cellContent = renderGameIcon("medkit", 30);
     }
     else {
       // 2. If it's not the player, check if it's a Trail!
@@ -756,263 +777,356 @@ const getItemEmoji = (item) => {
 
     cells.push(
       <div key={i} className={cellClass}>
-        {cellText}
+        {cellContent}
       </div>  
     );
 }
 
-  return (
-    <div className="game-container">
-      <h1 style={{ marginBottom: '20px' }}>Nosy Neighbor</h1>
+const canMove = gameState.turn === myPlayerId;
+const moveButtonStyle = (rotation, extraStyles = {}) => ({
+  width: 'clamp(22px, 7vw, 100px)',
+  height: 'clamp(22px, 7vw, 100px)',
+  padding: 0,
+  border: 'none',
+  backgroundColor: 'transparent',
+  backgroundImage: 'url("/movebtn.svg")',
+  backgroundSize: '100% 100%',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+  cursor: canMove ? 'pointer' : 'not-allowed',
+  filter: canMove ? 'drop-shadow(0 8px 8px rgba(0,0,0,0.45))' : 'grayscale(100%) brightness(55%)',
+  transform: `rotate(${rotation}deg)`,
+  transition: 'filter 0.12s ease, transform 0.12s ease',
+  ...extraStyles
+});
 
-      <h2 style={{ marginBottom: '10px'}}>You are: {myPlayerId === 'p1' ? 'Player 1 (Blue)' : 'Player 2 (Red)'}</h2>
+const auditLogBoxStyle = {
+  width: 'clamp(420px, 60vw, 390px)',
+  height: 'clamp(320px, 90vh, 500px)',
+  backgroundColor: 'transparent',
+  backgroundImage: 'url("/logbox.svg")',
+  backgroundSize: '100% 100%',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  padding: 'clamp(38px, 9vh, 8px) clamp(24px, 3vw, 42px) clamp(30px, 4vh, 46px)',
+  filter: 'drop-shadow(0 12px 16px rgba(76, 41, 7, 0.84))',
+  boxSizing: 'border-box',
+};
 
-      {/* ------------------------Game Status and HP system------------------------- */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', marginBottom: '20px', backgroundColor: '#f8f9fa', padding: '15px 30px', borderRadius: '10px', border: '1px solid #ddd' }}>
-        
-        {/* Player 1 HP */}
-        <div>
-          <span style={{ color: '#3498db', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 1 HP:</span>
-          <span style={{ fontSize: '1.5rem', marginLeft: '10px', color:'black' }}>  
-          {gameState.p1.hp > 0 ? '💓'.repeat(gameState.p1.hp) : '💀'} ({gameState.p1.hp}/3)
-          </span>
-        </div>
-  
-        <div style={{ borderLeft: '2px solid #ccc', height: '30px'}}></div>
+const auditLogHeaderStyle = {
+  color: '#310404',
+  padding: 'clamp(20px, 2vh, 70px) clamp(20px, 5vw, 100px)',
+  fontSize: 'clamp(10px, 1vw, 15px)',
+  fontFamily: 'cursive, sans-serif',
+  letterSpacing: '1px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  textShadow: '1px 2px 2px rgba(0,0,0,0.65)'
+};
 
-        {/* Player 2 HP */}
-        <div>
-          <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '1.2rem'}}>Player 2 HP:</span>
-          <span style={{ fontSize: '1.5rem', marginLeft: '10px', color:'black'  }}>
-          {gameState.p2.hp > 0 ? '💓'.repeat(gameState.p2.hp) : '💀'} ({gameState.p2.hp}/3)
-          </span>
-        </div>  
+const auditLogContentStyle = {
+  flex: 1,
+  overflowY: 'auto',
+padding: 'clamp(5px, 1vh, 150px) clamp(20px, 5vw, 100px)',
+  fontSize: 'clamp(11px, 1.0vw, 18px)',
+  fontWeight: 'bold',
+  fontFamily: 'sans-serif',
+  letterSpacing: '1px',
+  color: 'white',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  lineHeight: 1.25,
+  minWidth: 0
+};
 
-        <div style={{ borderLeft: '2px solid #ccc', height: '30px'}}></div>
+const auditLogEntryStyle = {
+  borderLeft: '4px solid #1a0b01',
+  paddingLeft: '8px',
+  paddingRight: '2px',
+  overflowWrap: 'anywhere',
+  wordBreak: 'break-word',
+  maxWidth: '100%',
+  boxSizing: 'border-box'
+};
 
-        {/* Reset Game Button */}
-        <button 
-          onClick={handleResetServer}
-          style={{ 
-            padding: '8px 16px', 
-            fontSize: '0.9rem', 
-            cursor: 'pointer', 
-            borderRadius: '6px', 
-            border: 'none', 
-            backgroundColor: '#7f8c8d', 
-            color: 'white', 
-            fontWeight: 'bold',
-            transition: '0.2s',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+const powerupDrawerStyle = {
+  width: 'clamp(145px, 18vw, 230px)',
+  height: 'clamp(205px, 34vh, 330px)',
+  backgroundColor: 'transparent',
+  backgroundImage: 'url("/logbox.svg")',
+  backgroundSize: '100% 100%',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+  padding: 'clamp(32px, 5vh, 44px) clamp(18px, 2vw, 28px) clamp(22px, 4vh, 30px)',
+  boxSizing: 'border-box',
+  filter: 'drop-shadow(0 10px 12px rgba(76, 41, 7, 0.65))'
+};
+
+const powerupDrawerTitleStyle = {
+  color: '#310404',
+  textAlign: 'center',
+  margin: '0 0 clamp(16px, 4vh, 80px)',
+  fontSize: 'clamp(1rem, 1.3vw, 1.25rem)',
+  fontFamily: 'cursive, sans-serif',
+  fontWeight: 'bold',
+  textShadow: '1px 1px 1px rgba(255,255,255,0.35)'
+};
+
+const renderHpBar = (playerName, hp, barSrc) => (
+  <div style={{
+    width: 'clamp(250px, 30vw, 450px)',
+    height: 'clamp(98px, 13vw, 175px)',
+    padding: 'clamp(20px, 4vw, 80px) clamp(10px, 2vw, 10px) 0 clamp(2px, 1vw, 10px)',
+    backgroundImage: `url("${barSrc}")`,
+    backgroundSize: '80% 80%',
+    backgroundRepeat: 'no-repeat',
+    filter: 'drop-shadow(0 7px 8px rgba(0,0,0,0.35))',
+    position: 'relative',
+    fontFamily: 'cursive, sans-serif',
+
+  }}>
+    <span style={{
+      position: 'absolute',
+      top: 'clamp(-4px, 3.5vw, 100px)',
+      Bottom: 'clamp(20px, 6vw, 192px)',
+      left: 'clamp(22px, 3vw, 72px)',
+      color: '#000000',
+      fontSize: 'clamp(18px, 2vw, 74px)',
+      fontWeight: 'bold',
+      textShadow: '1px 1px 0 rgba(255,255,255,0.4)'
+    }}>
+      {playerName}
+    </span>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 'clamp(7px, 2vw, 16px)',
+      marginTop: 'clamp(-5px, -2vh, 100px)'
+
+    
+
+    }}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <img
+          key={index}
+          src="/heart.svg"
+          alt="HP"
+          style={{
+            width: 'clamp(20px, 3.5vw, 80px)' ,
+            height: 'clamp(20px, 3.5vw, 80px)',
+            objectFit: 'contain',
+            opacity: index < hp ? 1 : 0.22,
+            filter: index < hp ? 'drop-shadow(0 2px 2px rgba(0,0,0,0.35))' : 'grayscale(100%)'
           }}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#c0392b'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#7f8c8d'}
-        >
-          🔄 Reset Game
-        </button>
+        />
+      ))}
+
+    </div>
+  </div>
+);
+
+ return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      width: '100vw',
+      height: '100dvh',
+      backgroundImage: 'url("/gamebg.png")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: 'sans-serif'
+    }}>
+
+      {/* ------------------------ TOP HUD AREA ------------------------- */}
+      <div style={{
+        position: 'absolute',
+        top: '3vh',
+        left: '4vw',
+        right: '0vw',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        zIndex: 10
+      }}>
+        
+        {/* Left Side: Bob's HP Bar (Scaled down to fit) */}
+        <div style={{ transform: 'scale(0.8)', transformOrigin: 'top left' }}>
+          {renderHpBar('Bob', gameState.p1.hp, '/hpbaryellow.svg')}
+        </div>
+
+        {/* Center: Turn Counter / Timer */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          fontFamily: 'cursive, sans-serif',
+
+       }}>
+          <span style={{ color: 'white', fontWeight: 'bold', fontSize: 'clamp(0rem, 1.5vw, 8rem)', textShadow: '1px 1px 3px black', letterSpacing: '2px', marginBottom: 'clamp(0px, -2vh, 100px)', marginLeft: 'clamp(-170px, -25vh, 100px)' }}>
+            TURNS
+          </span>
+          <div style={{
+            width: 'clamp(20px, 10vw, 500px)',
+            height: 'clamp(25px, 5vw, 105px)',
+            backgroundImage: 'url("/lobbywood.svg")',
+            backgroundSize: '100% 100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: 'clamp(1rem, 1.5vw, 2rem)',
+            fontWeight: 'bold',
+            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))',
+            marginLeft: 'clamp(-170px, -25vh, 100px)'
+          }}>
+            {gameState.p1_moves_remaining} : {gameState.p2_moves_remaining}
+          </div>
+        </div>
+
+        {/* Right Side: Bin's HP Bar (Scaled down to fit) */}
+        <div style={{ transform: 'scale(0.8)', transformOrigin: 'top right' }}>
+          {renderHpBar('Bin', gameState.p2.hp, '/hpbargreen.svg')}
+        </div>
 
       </div>
 
-     
- {/* ---------------------------------GAME OVER SCREEN------------------------------- */}
-      {gameState.status === 'game_over' ? (
-        <div style={{ backgroundColor: '#ffcccc', padding: '20px', borderRadius: '8px', border: '2px solid #ff0000', marginBottom: '20px', textAlign: 'center' }}>
-          <h2 style={{ color: '#cc0000', margin: '0 0 15px 0', animation: 'pulse 1.5s infinite' }}>
-            🚨 GAME OVER! {gameState.winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!'} 🚨
-          </h2>
+
+      {/* ------------------------ MAIN GAME AREA ------------------------- */}
+      <div style={{
+        position: 'absolute',
+        top: '18vh', 
+        bottom: '10vh',
+        left: '3vw',
+        right: '2.5vw',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+
+        {/* ================= LEFT COLUMN ================= */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '80%' }}>
           
-          {/* DYNAMIC REMATCH UI */}
-          {rematchRequested === myPlayerId ? (
-              // Scenario 1: I clicked it, waiting for opponent
-              <div style={{ color: '#c0392b', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                 Waiting for opponent to accept rematch... ⏳
-              </div>
-          ) : rematchRequested !== null && rematchRequested !== myPlayerId ? (
-              // Scenario 2: Opponent clicked it, asking me
-              <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '8px', display: 'inline-block', border: '2px solid #c0392b' }}>
-                  <p style={{ margin: '0 0 10px 0', fontWeight: 'bold', color: '#333' }}>
-                      Player {rematchRequested === 'p1' ? '1' : '2'} wants a rematch!
-                  </p>
-                  <button 
-                    onClick={handlePlayAgain}
-                    style={{ padding: '8px 20px', fontSize: '1rem', cursor: 'pointer', borderRadius: '5px', border: 'none', backgroundColor: '#2ecc71', color: 'white', fontWeight: 'bold' }}
-                  > 
-                    ✅ Accept Rematch
-                  </button>
-              </div>
-          ) : (
-              // Scenario 3: Nobody has clicked it yet
-              <button 
-                onClick={handlePlayAgain}
-                style={{ padding: '10px 25px', fontSize: '1.2rem', cursor: 'pointer', borderRadius: '8px', border: 'none', backgroundColor: '#c0392b', color: 'white', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-              > 
-                🔄 Play Again
-              </button>
+          {/* Active Player's Drawer */}
+          <div style={{ ...powerupDrawerStyle, position: 'relative', top: 'clamp(0px, 10vh, 20px)', left: 'auto', margin: 25 }}>
+            <h3 style={powerupDrawerTitleStyle}>Your Drawer</h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+              {/* Dynamically loads whichever inventory belongs to the device player */}
+              {gameState[`${myPlayerId}_inventory`]?.map((item, index) => (
+                <li 
+                  key={index} 
+                  onClick={() => handleUsePowerup(item)}
+                  style={{ cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed' }}
+                >
+                  {renderGameIcon(item, 50)}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Bottom Left Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginBottom: '5px' }}>
+            
+            {/* Reset / Undo Button */}
+            <button 
+              onClick={handleResetServer} 
+              aria-label="Reset game"
+              style={{ width: 'clamp(46px, vw, 70px)', height: 'clamp(46px, 5vw, 70px)', backgroundColor: 'transparent', backgroundImage: 'url("/restartbtn.svg")', backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', border: 'none', cursor: 'pointer', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }}
+            />
+            
+            {/* Home / Splash Screen Button */}
+            <button 
+              onClick={() => setGameStarted(false)} 
+              aria-label="Home"
+              style={{ width: 'clamp(46px, 5vw, 70px)', height: 'clamp(46px, 5vw, 70px)', backgroundColor: 'transparent', backgroundImage: 'url("/homebtn.svg")', backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', border: 'none', cursor: 'pointer', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }}
+            />
+          </div>
+        </div>
+
+
+        {/* ================= CENTER COLUMN (BOARD) ================= */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+          
+          {/* Game Over Popup Overlay */}
+          {gameState.status === 'game_over' && (
+            <div style={{ position: 'absolute', zIndex: 50, top: '20%', backgroundColor: 'rgba(0,0,0,0.85)', padding: '30px', borderRadius: '15px', textAlign: 'center', filter: 'drop-shadow(0 10px 20px black)', border: '2px solid #ff4d4d' }}>
+              <h2 style={{ color: '#ff4d4d', margin: '0 0 20px 0', fontSize: '2.5rem' }}>
+                🚨 GAME OVER! {gameState.winner === 'p1' ? 'Bob' : 'Bin'} Wins! 🚨
+              </h2>
+              {rematchRequested === myPlayerId ? (
+                  <div style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '1.2rem' }}>Waiting for opponent... ⏳</div>
+              ) : rematchRequested !== null ? (
+                  <button onClick={handlePlayAgain} style={{ padding: '10px 25px', fontSize: '1.2rem', cursor: 'pointer', borderRadius: '8px', border: 'none', backgroundColor: '#2ecc71', color: 'white', fontWeight: 'bold' }}>✅ Accept Rematch</button>
+              ) : (
+                  <button onClick={handlePlayAgain} style={{ padding: '10px 25px', fontSize: '1.2rem', cursor: 'pointer', borderRadius: '8px', border: 'none', backgroundColor: '#c0392b', color: 'white', fontWeight: 'bold' }}>🔄 Play Again</button>
+              )}
+            </div>
           )}
 
-        </div>
-       ) : (
-         <h3 style={{ marginBottom: '20px' }}>
-           {gameState.turn === myPlayerId ? "Your turn!" : "Opponent's turn..."}
-         </h3>
-       )}
-      
-
-{/* ----------------------Game Board & Drawers Layout------------------------------- */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: '30px' }}>
-        
-        {/* Left Side: Player 1's Sidebar (Drawer + Audit Log) */}
-        {myPlayerId === 'p1' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-            {/* P1 Drawer */}
-            <div style={{ width: '150px', backgroundColor: '#eef2f5', padding: '15px', borderRadius: '8px', border: '2px solid #3498db' }}>
-              <h3 style={{ color: '#3498db', textAlign: 'center', marginBottom: '10px' }}>Your Drawer</h3>
-              {gameState.p1_inventory.length === 0 ? (
-                <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
-              ) : (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {gameState.p1_inventory.map((item, index) => (
-                    <li 
-                      key={index} 
-                      onClick={() => handleUsePowerup(item)}
-                      style={{ 
-                        backgroundColor: '#fff', padding: '8px', borderRadius: '5px', 
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold',
-                        cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed',
-                        border: '2px solid transparent', transition: '0.2s'
-                      }}
-                    >
-                      {getItemEmoji(item)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* P1 Audit Log */}
-            <div style={{ width: '280px', height: '380px', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
-                <div style={{ backgroundColor: '#0f172a', color: '#34d399', padding: '12px', fontWeight: 'bold', fontSize: '12px', letterSpacing: '2px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
-                    LIVE AUDIT LOG
-                </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: '16px', fontSize: '12px', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {auditLogs.length === 0 ? (
-                        <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginTop: '40px' }}>Waiting for events...</div>
-                    ) : (
-                        auditLogs.map((log, index) => (
-                            <div key={index} style={{ borderLeft: '2px solid #10b981', paddingLeft: '12px' }}>
-                                <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>[{log.player.toUpperCase()}]</span> 
-                                <span style={{ color: '#cbd5e1', marginLeft: '8px' }}>{log.action}</span>
-                                <div style={{ color: '#64748b', marginTop: '4px' }}>{log.details}</div>
-                            </div>
-                        ))
-                    )}
-                    <div ref={logsEndRef} />
-                </div>
-            </div>
+          <div className={`board ${myPlayerId === 'p2' ? 'board-rotated' : ''}`} style={{
+            filter: 'drop-shadow(0 25px 30px rgba(0,0,0,0.8))',
+          }}>
+            {cells}
           </div>
-        )}
-      
-        {/* Center: The actual Game Board */}
-        <div className={`board ${myPlayerId === 'p2' ? 'board-rotated' : ''}`}>
-          {cells}
         </div>
 
-        {/* Right Side: Player 2's Sidebar (Drawer + Audit Log) */}
-        {myPlayerId === 'p2' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-            {/* P2 Drawer */}
-            <div style={{ width: '150px', backgroundColor: '#fdf1f0', padding: '15px', borderRadius: '8px', border: '2px solid #e74c3c' }}>
-              <h3 style={{ color: '#e74c3c', textAlign: 'center', marginBottom: '10px' }}>Your Drawer</h3>
-              {gameState.p2_inventory.length === 0 ? (
-                <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Empty</p>
-              ) : (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {gameState.p2_inventory.map((item, index) => (
-                    <li 
-                      key={index} 
-                      onClick={() => handleUsePowerup(item)}
-                      style={{ 
-                        backgroundColor: '#fff', padding: '8px', borderRadius: '5px', 
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textAlign: 'center', fontWeight: 'bold',
-                        cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed',
-                        border: '2px solid transparent', transition: '0.2s'
-                      }}
-                    >
-                      {getItemEmoji(item)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
 
-            {/* P2 Audit Log */}
-            <div style={{ width: '280px', height: '380px', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
-                <div style={{ backgroundColor: '#0f172a', color: '#34d399', padding: '12px', fontWeight: 'bold', fontSize: '12px', letterSpacing: '2px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
-                    LIVE AUDIT LOG
-                </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: '16px', fontSize: '12px', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {auditLogs.length === 0 ? (
-                        <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginTop: '40px' }}>Waiting for events...</div>
-                    ) : (
-                        auditLogs.map((log, index) => (
-                            <div key={index} style={{ borderLeft: '2px solid #10b981', paddingLeft: '12px' }}>
-                                <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>[{log.player.toUpperCase()}]</span> 
-                                <span style={{ color: '#cbd5e1', marginLeft: '8px' }}>{log.action}</span>
-                                <div style={{ color: '#64748b', marginTop: '4px' }}>{log.details}</div>
-                            </div>
-                        ))
-                    )}
-                    <div ref={logsEndRef} />
-                </div>
+        {/* ================= RIGHT COLUMN ================= */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', height: '100%' }}>
+          
+          {/* Audit Log Box */}
+          <div style={{ ...auditLogBoxStyle, position: 'relative', top: '11px', left: 'auto', margin: '10px' }}>
+              <div style={auditLogHeaderStyle}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#1e1500' }}></div>
+                  LIVE AUDIT LOG
+              </div>
+              <div className="audit-log-scroll" style={auditLogContentStyle}>
+                  {auditLogs.length === 0 ? (
+                      <div style={{ color: '#1e1500', fontStyle: 'italic', textAlign: 'center', marginTop: '40px' }}>Waiting for events...</div>
+                  ) : (
+                      auditLogs.map((log, index) => (
+                          <div key={index} style={auditLogEntryStyle}>
+                              <span style={{ color: '#ff9090', fontWeight: 'bold' }}>[{log.player.toUpperCase()}]</span> 
+                              <span style={{ color: '#00d218', marginLeft: '6px' }}>{log.action}</span>
+                              <div style={{ color: '#1e1500', marginTop: '3px' }}>{log.details}</div>
+                          </div>
+                      ))
+                  )}
+                  <div ref={logsEndRef} />
+              </div>
+          </div>
+
+          {/* D-PAD CONTROLS */}
+          <div style={{ display: 'flex', flexDirection: 'column', left: 'auto' , alignItems: 'center', marginBottom: '10px', marginLeft: '-10px' }}>
+            {/* Up */}
+            <button onClick={() => handleMove('forward')} disabled={!canMove} style={moveButtonStyle(90)} />
+            
+            <div style={{ display: 'flex', gap: '4px', marginTop: '5px' }}>
+              {/* Left */}
+              <button onClick={() => handleMove('left')} disabled={!canMove} style={moveButtonStyle(0)} />
+              
+              {/* Down */}
+              <button onClick={() => handleMove('backward')} disabled={!canMove} style={moveButtonStyle(270)} />
+              
+              {/* Right */}
+              <button onClick={() => handleMove('right')} disabled={!canMove} style={moveButtonStyle(180)} />
             </div>
           </div>
-        )}
+
+        </div>
 
       </div>
-{/* ----------------------Movement Controls------------------------------- */}
-      <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-
-      {/* the forward button */}
-      <button 
-        onClick={() => handleMove('forward')}
-        disabled={gameState.turn !== myPlayerId}
-        style={{ padding: '10px 20px', fontSize: '40px', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
-        >⬆️
-      </button>
-
-      <div style={{ display: 'flex', gap: '60px' }}>
-
-      {/* the left button */}
-      <button 
-        onClick={() => handleMove('left')}
-        disabled={gameState.turn !== myPlayerId}
-        style={{ padding: '10px 30px', fontSize: '40px', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
-        >⬅️
-      </button>
-
-      {/* the backward button */}
-      <button 
-        onClick={() => handleMove('backward')}
-        disabled={gameState.turn !== myPlayerId}
-        style={{ padding: '10px 30px', margin: '30px',  fontSize: '40px', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
-        >⬇️
-      </button>
-
-      {/* the right button */}   
-      <button 
-        onClick={() => handleMove('right')} 
-        disabled={gameState.turn !== myPlayerId}
-        style={{  padding: '10px 30px', fontSize: '40px', cursor: gameState.turn === myPlayerId ? 'pointer' : 'not-allowed', borderRadius: '8px', border: 'none', backgroundColor: gameState.turn === myPlayerId ? '#2ecc71' : '#7f8c8d', color: 'white' }}
-      >➡️
-      </button>
-
-          </div>
-      </div>
-
     </div> 
   );
 }
- 
+
+
 export default App;
