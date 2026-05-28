@@ -17,7 +17,6 @@ def rabbitmq_worker():
             print(f" X [RabbitMQ Audit logs]: {event['player']} | Action: {event['action']} | Details: {event['details']}", flush=True)
         
         worker_channel.basic_consume(queue='game_moves', on_message_callback=callback, auto_ack=True)
-        
         print("RabbitMQ Audit Worker started, listening for game moves... (Press CTRL+C to quit)", flush=True)
         
         # This is a blocking loop. It will run forever!
