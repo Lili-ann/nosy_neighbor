@@ -81,22 +81,6 @@ docker-compose.yml
 README.md
 ```
 
-## Set the Backend IP for the Frontend
-
-Edit the frontend .env file:
-
-```bash
-nano frontend/.env
-```
-
-Set it to your VM external IP:
-
-```env
-VITE_SERVER_ID=YOUR_VM_EXTERNAL_IP
-``` 
-
-Do not include `http://` and do not include `:5000`.
-
 ## Start the Project
 
 From the project root:
